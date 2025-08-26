@@ -139,12 +139,30 @@
       });
 
       try {
-        const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
-        const method = modo === "crear" ? "POST" : "PUT";
-        const res = await fetch(url,{method, body: fd});
-        if(!res.ok) throw new Error();
-        alert(modo==="crear" ? "Empleado registrado" : "Empleado actualizado");
-      } catch(e){ alert("Error al guardar"); }
+  const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
+  const method = modo === "crear" ? "POST" : "PUT";
+
+  const res = await fetch(url, { method, body: fd });
+
+  // Si la respuesta no es 2xx, intentamos leer el mensaje de error del backend
+  if (!res.ok) {
+    let detalle = "";
+    try {
+      const data = await res.json();
+      detalle = data?.error || JSON.stringify(data);
+    } catch {
+      // Si no viene JSON, leemos como texto por si acaso
+      detalle = await res.text();
+    }
+    throw new Error(`HTTP ${res.status} – ${detalle || "Error desconocido"}`);
+  }
+
+  // Si todo ok
+  alert(modo === "crear" ? "Empleado registrado" : "Empleado actualizado");
+} catch (e) {
+  alert(`Error al enviar: ${e.message}`);
+  console.error(e); // útil para ver más detalles en la consola del navegador (F12)
+}
     });
 
     document.getElementById("btnReset").addEventListener("click", ()=> document.getElementById("formEmpleado").reset());
@@ -152,4 +170,5 @@
   </script>
 </body>
 </html>
+
 
