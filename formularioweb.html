@@ -18,9 +18,26 @@
     .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
     .btn.primary { background:#2563eb; color:white; }
     .btn.secondary { background:#374151; color:white; }
+    .topnav {
+  display:flex; gap:12px; align-items:center;
+  background:#0b1220; padding:10px 14px; border-radius:10px;
+  margin:0 auto 16px auto; max-width:1200px; border:1px solid #1f2937;
+}
+.topnav a {
+  color:#e5e7eb; text-decoration:none; background:#1f2937;
+  padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
+}
+.topnav a:hover { background:#374151; text-decoration:none; }
+
   </style>
 </head>
 <body>
+  <!-- NAV simple entre páginas -->
+<nav class="topnav">
+  <a href="formularioweb.html">➕ Nuevo empleado</a>
+  <a href="consulta.html">🔎 Consultar empleados</a>
+</nav>
+
   <div class="card">
     <h1 id="titulo">Registro de Empleado</h1>
 
@@ -170,5 +187,6 @@
   </script>
 </body>
 </html>
+
 
 
