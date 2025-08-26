@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Consulta de Empleados</title>
+  <style>
+    body { font-family: sans-serif; background:#0f172a; color:#e5e7eb; padding:20px; }
+    .card { background:#111827; padding:20px; border-radius:14px; max-width:1200px; margin:auto; }
+    h1 { text-align:center; }
+    .filters { display:flex; gap:20px; justify-content:center; margin-bottom:20px; }
+    .filters div { background:#0b1220; padding:10px; border-radius:8px; }
+    select, input[type="radio"], input[type="number"] { margin:4px; }
+    button { background:#2563eb; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #374151; padding:8px; text-align:center; font-size:14px; }
+    th { background:#1f2937; }
+    a { color:#60a5fa; text-decoration:none; }
+    a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Consulta de Empleados</h1>
+
+    <div class="filters">
+      <div>
+        <label><input type="radio" name="modo" value="fecha" checked> Filtrar por Mes + Año</label><br>
+        <label>Año:</label>
+        <select id="filtroAno">
+          <option value="TODOS">TODOS</option>
+          <option value="2023">2023</option>
+          <option value="2024">2024</option>
+          <option value="2025">2025</option>
+        </select>
+        <label>Mes:</label>
+        <select id="filtroMes">
+          <option value="TODOS">TODOS</option>
+          <option value="1">Enero</option>
+          <option value="2">Febrero</option>
+          <option value="3">Marzo</option>
+          <option value="4">Abril</option>
+          <option value="5">Mayo</option>
+          <option value="6">Junio</option>
+          <option value="7">Julio</option>
+          <option value="8">Agosto</option>
+          <option value="9">Septiembre</option>
+          <option value="10">Octubre</option>
+          <option value="11">Noviembre</option>
+          <option value="12">Diciembre</option>
+        </select>
+      </div>
+      <div>
+        <label><input type="radio" name="modo" value="grupo"> Filtrar por Grupo (rango)</label><br>
+        <label>Desde:</label>
+        <input type="number" id="grupoInicio" min="1" style="width:60px">
+        <label>Hasta:</label>
+        <input type="number" id="grupoFin" min="1" style="width:60px">
+      </div>
+    </div>
+
+    <div style="text-align:center">
+      <button id="btnConsultar">Consultar</button>
+    </div>
+
+    <table id="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Sede / Turno</th>
+          <th>Grupo</th>
+          <th>Fecha Registro</th>
+          <th>DNI</th>
+          <th>Certificados</th>
+          <th>Antecedentes</th>
+          <th>Médicos</th>
+          <th>Capacitación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:5000/api/empleados";
+
+    document.getElementById("btnConsultar").addEventListener("click", async ()=>{
+      const modo = document.querySelector("input[name='modo']:checked").value;
+      let url = API_URL;
+
+      if(modo === "fecha"){
+        const ano = document.getElementById("filtroAno").value;
+        const mes = document.getElementById("filtroMes").value;
+        if(mes !== "TODOS" && ano === "TODOS"){
+          alert("Si seleccionas un mes específico, debes elegir un año específico.");
+          return;
+        }
+        url += `?ano=${ano}&mes=${mes}`;
+      } else {
+        const inicio = document.getElementById("grupoInicio").value;
+        const fin = document.getElementById("grupoFin").value;
+        if(!inicio && !fin){
+          url += `?grupo=TODOS`;
+        } else if(inicio && !fin){
+          url += `?grupoInicio=${inicio}&grupoFin=${inicio}`;
+        } else if(inicio && fin){
+          url += `?grupoInicio=${inicio}&grupoFin=${fin}`;
+        } else if(!inicio && fin){
+          url += `?grupoInicio=1&grupoFin=${fin}`;
+        }
+      }
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        renderTabla(data);
+      } catch(e){ alert("Error al consultar"); }
+    });
+
+    function renderTabla(lista){
+      const tbody = document.querySelector("#tabla tbody");
+      tbody.innerHTML = "";
+      if(lista.length === 0){
+        tbody.innerHTML = "<tr><td colspan='10'>No se encontraron registros</td></tr>";
+        return;
+      }
+      lista.forEach(emp=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${emp.nombre}</td>
+          <td>${emp.sede}</td>
+          <td>${emp.grupo}</td>
+          <td>${emp.fecha || ""}</td>
+          <td>${renderDoc(emp.id, emp.dni)}</td>
+          <td>${renderDoc(emp.id, emp.certificados)}</td>
+          <td>${renderDoc(emp.id, emp.antecedentes)}</td>
+          <td>${renderDoc(emp.id, emp.medicos)}</td>
+          <td>${renderDoc(emp.id, emp.capacitacion)}</td>
+          <td><a href="formEmpleado.html?id=${emp.id}">Editar</a></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderDoc(id, url){
+      if(url){
+        return `<a href="${url}" target="_blank">📎 Descargar</a>`;
+      } else {
+        return `<a href="formEmpleado.html?id=${id}">⬆️ Subir</a>`;
+      }
+    }
+  </script>
+</body>
+</html>

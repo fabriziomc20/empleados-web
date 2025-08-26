@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Formulario de Empleado – Carga de Documentos</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; background: #0f172a; color: #e5e7eb; padding:20px; }
+    .card { max-width: 960px; margin:auto; background:#111827; border-radius:12px; padding:20px; }
+    h1 { text-align:center; }
+    .field { margin-bottom: 16px; display:flex; flex-direction:column; }
+    label { margin-bottom:6px; color:#94a3b8; font-size:14px; }
+    input[type="text"] { padding:10px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:white; }
+    .dropzone { border:2px dashed #334155; border-radius:10px; padding:20px; text-align:center; margin-top:6px; cursor:pointer; }
+    .dropzone input { display:none; }
+    .files { margin-top:8px; font-size:14px; }
+    .actions { display:flex; justify-content:space-between; margin-top:20px; }
+    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .btn.primary { background:#2563eb; color:white; }
+    .btn.secondary { background:#374151; color:white; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1 id="titulo">Registro de Empleado</h1>
+
+    <form id="formEmpleado">
+      <div class="field">
+        <label>Nombre completo</label>
+        <input type="text" id="nombre" required>
+      </div>
+      <div class="field">
+        <label>Sede / Turno</label>
+        <input type="text" id="sede" required>
+      </div>
+      <div class="field">
+        <label>Grupo</label>
+        <input type="text" id="grupo" required>
+      </div>
+
+      <!-- Campos de documentos -->
+      <div class="field">
+        <label>Foto de DNI</label>
+        <div class="dropzone" id="drop_dni"><input type="file" id="file_dni" accept="application/pdf,image/*"></div>
+        <div id="files_dni" class="files"></div>
+      </div>
+
+      <div class="field">
+        <label>Certificados</label>
+        <div class="dropzone" id="drop_certificados"><input type="file" id="file_certificados" accept="application/pdf,image/*" multiple></div>
+        <div id="files_certificados" class="files"></div>
+      </div>
+
+      <div class="field">
+        <label>Antecedentes</label>
+        <div class="dropzone" id="drop_antecedentes"><input type="file" id="file_antecedentes" accept="application/pdf,image/*"></div>
+        <div id="files_antecedentes" class="files"></div>
+      </div>
+
+      <div class="field">
+        <label>Documentos Médicos</label>
+        <div class="dropzone" id="drop_medicos"><input type="file" id="file_medicos" accept="application/pdf,image/*"></div>
+        <div id="files_medicos" class="files"></div>
+      </div>
+
+      <div class="field">
+        <label>Certificados de Capacitación</label>
+        <div class="dropzone" id="drop_capacitacion"><input type="file" id="file_capacitacion" accept="application/pdf,image/*" multiple></div>
+        <div id="files_capacitacion" class="files"></div>
+      </div>
+    </form>
+
+    <div class="actions">
+      <button type="button" class="btn secondary" id="btnReset">Limpiar</button>
+      <button type="button" class="btn primary" id="btnSubmit">Guardar formulario</button>
+    </div>
+  </div>
+
+  <script>
+    const UPLOAD_URL = "http://localhost:5000/api/empleados";
+    let modo = "crear";
+    let empleadoId = null;
+
+    function setupDrop(idInput, idFiles, idDrop) {
+      const input = document.getElementById(idInput);
+      const filesContainer = document.getElementById(idFiles);
+      const dropzone = document.getElementById(idDrop);
+
+      input.addEventListener("change", () => {
+        filesContainer.innerHTML = "";
+        Array.from(input.files).forEach(f => {
+          const div = document.createElement("div");
+          div.textContent = f.name;
+          filesContainer.appendChild(div);
+        });
+      });
+
+      ["click","dblclick"].forEach(evt => {
+        dropzone.addEventListener(evt, () => input.click());
+      });
+    }
+    setupDrop("file_dni","files_dni","drop_dni");
+    setupDrop("file_certificados","files_certificados","drop_certificados");
+    setupDrop("file_antecedentes","files_antecedentes","drop_antecedentes");
+    setupDrop("file_medicos","files_medicos","drop_medicos");
+    setupDrop("file_capacitacion","files_capacitacion","drop_capacitacion");
+
+    async function cargarEmpleadoSiExiste() {
+      const params = new URLSearchParams(window.location.search);
+      if(params.has("id")) {
+        empleadoId = params.get("id");
+        modo = "editar";
+        document.getElementById("btnSubmit").textContent = "Actualizar";
+        document.getElementById("titulo").textContent = "Editar Empleado";
+        try {
+          const res = await fetch(`${UPLOAD_URL}/${empleadoId}`);
+          const data = await res.json();
+          document.getElementById("nombre").value = data.nombre || "";
+          document.getElementById("sede").value = data.sede || "";
+          document.getElementById("grupo").value = data.grupo || "";
+        } catch(e){ console.error(e); }
+      }
+    }
+
+    document.getElementById("btnSubmit").addEventListener("click", async ()=>{
+      const nombre = document.getElementById("nombre").value.trim();
+      const sede = document.getElementById("sede").value.trim();
+      const grupo = document.getElementById("grupo").value.trim();
+      if(!nombre || !sede || !grupo){ alert("Completa todos los campos"); return; }
+
+      const fd = new FormData();
+      fd.append("nombre", nombre);
+      fd.append("sede", sede);
+      fd.append("grupo", grupo);
+
+      ["dni","certificados","antecedentes","medicos","capacitacion"].forEach(tipo=>{
+        const files = document.getElementById("file_"+tipo).files;
+        Array.from(files).forEach(f=> fd.append(tipo, f));
+      });
+
+      try {
+        const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
+        const method = modo === "crear" ? "POST" : "PUT";
+        const res = await fetch(url,{method, body: fd});
+        if(!res.ok) throw new Error();
+        alert(modo==="crear" ? "Empleado registrado" : "Empleado actualizado");
+      } catch(e){ alert("Error al guardar"); }
+    });
+
+    document.getElementById("btnReset").addEventListener("click", ()=> document.getElementById("formEmpleado").reset());
+    cargarEmpleadoSiExiste();
+  </script>
+</body>
+</html>
