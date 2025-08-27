@@ -5,38 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Formulario de Empleado – Carga de Documentos</title>
   <style>
-    body { margin: 0; font-family: sans-serif; background: #0f172a; color: #e5e7eb; padding:20px; }
-    .card { max-width: 960px; margin:auto; background:#111827; border-radius:12px; padding:20px; }
-    h1 { text-align:center; }
-    .field { margin-bottom: 16px; display:flex; flex-direction:column; }
+    body { margin:0; font-family:sans-serif; background:#0f172a; color:#e5e7eb; padding:20px; }
+    .card { max-width:960px; margin:auto; background:#111827; border-radius:12px; padding:20px; }
+    h1 { text-align:center; margin:12px 0 16px 0; }
+    .field { margin-bottom:16px; display:flex; flex-direction:column; }
     label { margin-bottom:6px; color:#94a3b8; font-size:14px; }
     input[type="text"] { padding:10px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:white; }
-    .dropzone { border:2px dashed #334155; border-radius:10px; padding:20px; text-align:center; margin-top:6px; cursor:pointer; }
+
+    .dropzone { border:2px dashed #334155; border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
+    .dropzone.dragover { border-color:#60a5fa; background:#0b2747; }
     .dropzone input { display:none; }
-    .files { margin-top:8px; font-size:14px; }
-    .actions { display:flex; justify-content:space-between; margin-top:20px; }
-    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
+    .files { margin-top:8px; font-size:14px; color:#cbd5e1; }
+
+    .actions { display:flex; justify-content:space-between; margin-top:20px; gap:12px; flex-wrap:wrap; }
+    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-block; }
     .btn.primary { background:#2563eb; color:white; }
     .btn.secondary { background:#374151; color:white; }
-    .topnav {
-  display:flex; gap:12px; align-items:center;
-  background:#0b1220; padding:10px 14px; border-radius:10px;
-  margin:0 auto 16px auto; max-width:1200px; border:1px solid #1f2937;
-}
-.topnav a {
-  color:#e5e7eb; text-decoration:none; background:#1f2937;
-  padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-}
-.topnav a:hover { background:#374151; text-decoration:none; }
 
+    /* NAV */
+    .topnav {
+      display:flex; gap:12px; align-items:center;
+      background:#0b1220; padding:10px 14px; border-radius:10px;
+      margin:0 auto 16px auto; max-width:1200px; border:1px solid #1f2937;
+    }
+    .topnav a {
+      color:#e5e7eb; text-decoration:none; background:#1f2937;
+      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
+    }
+    .topnav a:hover { background:#374151; text-decoration:none; }
   </style>
 </head>
 <body>
   <!-- NAV simple entre páginas -->
-<nav class="topnav">
-  <a href="formularioweb.html">➕ Nuevo empleado</a>
-  <a href="consulta.html">🔎 Consultar empleados</a>
-</nav>
+  <nav class="topnav">
+    <a href="formularioweb.html">➕ Nuevo empleado</a>
+    <a href="consulta.html">🔎 Consultar empleados</a>
+  </nav>
 
   <div class="card">
     <h1 id="titulo">Registro de Empleado</h1>
@@ -46,82 +50,174 @@
         <label>Nombre completo</label>
         <input type="text" id="nombre" required>
       </div>
+
       <div class="field">
         <label>Sede / Turno</label>
         <input type="text" id="sede" required>
       </div>
+
       <div class="field">
         <label>Grupo</label>
         <input type="text" id="grupo" required>
       </div>
 
-      <!-- Campos de documentos -->
+      <!-- DNI -->
       <div class="field">
         <label>Foto de DNI</label>
-        <div class="dropzone" id="drop_dni"><input type="file" id="file_dni" accept="application/pdf,image/*"></div>
+        <div class="dropzone" id="drop_dni">
+          <input type="file" id="file_dni" accept="application/pdf,image/*">
+          Suelta aquí tu DNI o haz clic.
+        </div>
         <div id="files_dni" class="files"></div>
       </div>
 
+      <!-- Certificados -->
       <div class="field">
         <label>Certificados</label>
-        <div class="dropzone" id="drop_certificados"><input type="file" id="file_certificados" accept="application/pdf,image/*" multiple></div>
+        <div class="dropzone" id="drop_certificados">
+          <input type="file" id="file_certificados" accept="application/pdf,image/*" multiple>
+          Suelta aquí certificados o haz clic (múltiples).
+        </div>
         <div id="files_certificados" class="files"></div>
       </div>
 
+      <!-- Antecedentes -->
       <div class="field">
         <label>Antecedentes</label>
-        <div class="dropzone" id="drop_antecedentes"><input type="file" id="file_antecedentes" accept="application/pdf,image/*"></div>
+        <div class="dropzone" id="drop_antecedentes">
+          <input type="file" id="file_antecedentes" accept="application/pdf,image/*">
+          Suelta aquí antecedentes o haz clic.
+        </div>
         <div id="files_antecedentes" class="files"></div>
       </div>
 
+      <!-- Médicos -->
       <div class="field">
         <label>Documentos Médicos</label>
-        <div class="dropzone" id="drop_medicos"><input type="file" id="file_medicos" accept="application/pdf,image/*"></div>
+        <div class="dropzone" id="drop_medicos">
+          <input type="file" id="file_medicos" accept="application/pdf,image/*">
+          Suelta aquí documentos médicos o haz clic.
+        </div>
         <div id="files_medicos" class="files"></div>
       </div>
 
+      <!-- Capacitación -->
       <div class="field">
         <label>Certificados de Capacitación</label>
-        <div class="dropzone" id="drop_capacitacion"><input type="file" id="file_capacitacion" accept="application/pdf,image/*" multiple></div>
+        <div class="dropzone" id="drop_capacitacion">
+          <input type="file" id="file_capacitacion" accept="application/pdf,image/*" multiple>
+          Suelta aquí capacitaciones o haz clic (múltiples).
+        </div>
         <div id="files_capacitacion" class="files"></div>
       </div>
     </form>
 
     <div class="actions">
+      <a href="consulta.html" class="btn secondary">Ver consultas</a>
       <button type="button" class="btn secondary" id="btnReset">Limpiar</button>
       <button type="button" class="btn primary" id="btnSubmit">Guardar formulario</button>
     </div>
   </div>
 
   <script>
+    // Cambia esta URL si tu API es otra
     const UPLOAD_URL = "https://empleados-api-o6yy.onrender.com/api/empleados";
+
     let modo = "crear";
     let empleadoId = null;
 
-    function setupDrop(idInput, idFiles, idDrop) {
+    // --- Drag & Drop con soporte de click/dblclick y vista de archivos ---
+    function setupDrop(idInput, idFiles, idDrop, {accept=[], maxCount=null} = {}) {
       const input = document.getElementById(idInput);
       const filesContainer = document.getElementById(idFiles);
       const dropzone = document.getElementById(idDrop);
 
-      input.addEventListener("change", () => {
-        filesContainer.innerHTML = "";
-        Array.from(input.files).forEach(f => {
+      // Click & doble click -> abrir selector
+      ["click","dblclick"].forEach(evt => dropzone.addEventListener(evt, () => input.click()));
+
+      // Cuando cambian archivos vía selector
+      input.addEventListener("change", () => renderFilesList(input.files, filesContainer));
+
+      // Utilidades
+      const prevent = e => { e.preventDefault(); e.stopPropagation(); };
+      const setDrag = on => dropzone.classList.toggle("dragover", on);
+
+      // Eventos drag & drop
+      ["dragenter","dragover"].forEach(evt => {
+        dropzone.addEventListener(evt, e => { prevent(e); setDrag(true); });
+      });
+      ["dragleave","dragend"].forEach(evt => {
+        dropzone.addEventListener(evt, e => { prevent(e); setDrag(false); });
+      });
+
+      dropzone.addEventListener("drop", e => {
+        prevent(e); setDrag(false);
+        const dropped = Array.from(e.dataTransfer.files || []);
+
+        // Filtro por tipo (opcional)
+        const filtered = accept.length
+          ? dropped.filter(f => accept.some(a => f.type?.startsWith(a) || f.name.toLowerCase().endsWith(a)))
+          : dropped;
+
+        // Límite de cantidad (opcional)
+        const current = Array.from(input.files || []);
+        let toAssign = [...current, ...filtered];
+        if (maxCount && toAssign.length > maxCount) {
+          toAssign = toAssign.slice(0, maxCount);
+          alert(`Se permiten hasta ${maxCount} archivos en este campo.`);
+        }
+
+        // Asignar al input (crear FileList)
+        const dt = new DataTransfer();
+        toAssign.forEach(f => dt.items.add(f));
+        input.files = dt.files;
+
+        renderFilesList(input.files, filesContainer);
+      });
+
+      function renderFilesList(fileList, container){
+        container.innerHTML = "";
+        const arr = Array.from(fileList || []);
+        if (arr.length === 0) {
+          container.textContent = "Suelta aquí tus archivos o haz clic.";
+          return;
+        }
+        arr.forEach(f => {
           const div = document.createElement("div");
-          div.textContent = f.name;
-          filesContainer.appendChild(div);
+          div.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
+          container.appendChild(div);
         });
-      });
+      }
 
-      ["click","dblclick"].forEach(evt => {
-        dropzone.addEventListener(evt, () => input.click());
-      });
+      // Texto inicial si está vacío
+      if (!filesContainer.textContent.trim()) {
+        filesContainer.textContent = "Suelta aquí tus archivos o haz clic.";
+      }
     }
-    setupDrop("file_dni","files_dni","drop_dni");
-    setupDrop("file_certificados","files_certificados","drop_certificados");
-    setupDrop("file_antecedentes","files_antecedentes","drop_antecedentes");
-    setupDrop("file_medicos","files_medicos","drop_medicos");
-    setupDrop("file_capacitacion","files_capacitacion","drop_capacitacion");
 
+    // Inicializar dropzones con límites
+    setupDrop("file_dni","files_dni","drop_dni", {
+      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
+      maxCount: 2
+    });
+    setupDrop("file_certificados","files_certificados","drop_certificados", {
+      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
+      maxCount: 10
+    });
+    setupDrop("file_antecedentes","files_antecedentes","drop_antecedentes", {
+      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
+      maxCount: 5
+    });
+    setupDrop("file_medicos","files_medicos","drop_medicos", {
+      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
+      maxCount: 5
+    });
+    setupDrop("file_capacitacion","files_capacitacion","drop_capacitacion", {
+      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
+      maxCount: 10
+    });
+
+    // Cargar modo edición si viene ?id=...
     async function cargarEmpleadoSiExiste() {
       const params = new URLSearchParams(window.location.search);
       if(params.has("id")) {
@@ -139,6 +235,7 @@
       }
     }
 
+    // Guardar
     document.getElementById("btnSubmit").addEventListener("click", async ()=>{
       const nombre = document.getElementById("nombre").value.trim();
       const sede = document.getElementById("sede").value.trim();
@@ -156,37 +253,48 @@
       });
 
       try {
-  const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
-  const method = modo === "crear" ? "POST" : "PUT";
+        const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
+        const method = modo === "crear" ? "POST" : "PUT";
 
-  const res = await fetch(url, { method, body: fd });
+        const res = await fetch(url, { method, body: fd });
 
-  // Si la respuesta no es 2xx, intentamos leer el mensaje de error del backend
-  if (!res.ok) {
-    let detalle = "";
-    try {
-      const data = await res.json();
-      detalle = data?.error || JSON.stringify(data);
-    } catch {
-      // Si no viene JSON, leemos como texto por si acaso
-      detalle = await res.text();
-    }
-    throw new Error(`HTTP ${res.status} – ${detalle || "Error desconocido"}`);
-  }
+        if (!res.ok) {
+          let detalle = "";
+          try {
+            const data = await res.json();
+            detalle = data?.error || JSON.stringify(data);
+          } catch {
+            detalle = await res.text();
+          }
+          throw new Error(`HTTP ${res.status} – ${detalle || "Error desconocido"}`);
+        }
 
-  // Si todo ok
-  alert(modo === "crear" ? "Empleado registrado" : "Empleado actualizado");
-} catch (e) {
-  alert(`Error al enviar: ${e.message}`);
-  console.error(e); // útil para ver más detalles en la consola del navegador (F12)
-}
+        alert(modo === "crear" ? "Empleado registrado" : "Empleado actualizado");
+      } catch (e) {
+        alert(`Error al enviar: ${e.message}`);
+        console.error(e);
+      }
     });
 
-    document.getElementById("btnReset").addEventListener("click", ()=> document.getElementById("formEmpleado").reset());
+    // Limpiar
+    document.getElementById("btnReset").addEventListener("click", ()=>{
+      document.getElementById("formEmpleado").reset();
+      ["files_dni","files_certificados","files_antecedentes","files_medicos","files_capacitacion"]
+        .forEach(id => document.getElementById(id).textContent = "Suelta aquí tus archivos o haz clic.");
+    });
+
+    // Atajos: Alt+N (nuevo), Alt+C (consulta)
+    document.addEventListener("keydown", (e) => {
+      if (e.altKey && (e.key === "n" || e.key === "N")) window.location.href = "formularioweb.html";
+      if (e.altKey && (e.key === "c" || e.key === "C")) window.location.href = "consulta.html";
+    });
+
     cargarEmpleadoSiExiste();
   </script>
 </body>
 </html>
+
+
 
 
 
