@@ -1,173 +1,276 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
-  <title>Consulta de Empleados</title>
-  <style>
-    body { font-family: sans-serif; background:#0f172a; color:#e5e7eb; padding:20px; }
-    .card { background:#111827; padding:20px; border-radius:14px; max-width:1200px; margin:auto; }
-    h1 { text-align:center; }
-    .filters { display:flex; gap:20px; justify-content:center; margin-bottom:20px; }
-    .filters div { background:#0b1220; padding:10px; border-radius:8px; }
-    select, input[type="radio"], input[type="number"] { margin:4px; }
-    button { background:#2563eb; color:white; border:none; padding:10px 16px; border-radius:8px; cursor:pointer; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { border:1px solid #374151; padding:8px; text-align:center; font-size:14px; }
-    th { background:#1f2937; }
-    a { color:#60a5fa; text-decoration:none; }
-    a:hover { text-decoration:underline; }
-    .topnav {
-  display:flex; gap:12px; align-items:center;
-  background:#0b1220; padding:10px 14px; border-radius:10px;
-  margin:0 auto 16px auto; max-width:1200px; border:1px solid #1f2937;
-}
-.topnav a {
-  color:#e5e7eb; text-decoration:none; background:#1f2937;
-  padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-}
-.topnav a:hover { background:#374151; text-decoration:none; }
-
-  </style>
+<meta charset="utf-8" />
+<title>Reclutamiento – Consulta</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--brand:#2563eb;}
+  *{box-sizing:border-box} body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  /* Sidebar */
+  .sidebar{width:260px;background:#0b1220;min-height:100vh;padding:18px;position:sticky;top:0}
+  .logo{font-weight:700;margin-bottom:14px}
+  .nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--text);text-decoration:none;margin:6px 0}
+  .nav a.active{background:var(--brand)}
+  .nav a:hover{background:#1f2937}
+  /* Main */
+  .main{flex:1;padding:20px}
+  .card{background:var(--panel);padding:18px;border-radius:14px;max-width:1200px}
+  h1{margin:6px 0 14px}
+  .filters{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}
+  .box{background:#0b1220;border:1px solid #334155;border-radius:12px;padding:12px}
+  label{font-size:13px;color:var(--muted);margin-right:6px}
+  select,input[type="number"]{padding:8px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+  button{background:var(--brand);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+  button.secondary{background:#374151}
+  table{width:100%;border-collapse:collapse;margin-top:14px}
+  th,td{border:1px solid #374151;padding:8px;text-align:center;font-size:14px}
+  th{background:#1f2937}
+  a{color:#60a5fa;text-decoration:none}
+  a:hover{text-decoration:underline}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
+  .tag.rev{background:#1e293b;color:#e2e8f0}
+  .tag.apr{background:#14532d;color:#dcfce7}
+  .tag.can{background:#7f1d1d;color:#fee2e2}
+  #msg{display:none;margin:12px 0;padding:10px;border-radius:10px}
+  .ok{background:#065f46;color:#ecfdf5}
+  .err{background:#7f1d1d;color:#fee2e2}
+</style>
 </head>
 <body>
-  <!-- NAV simple entre páginas -->
-<nav class="topnav">
-  <a href="formularioweb.html">➕ Nuevo empleado</a>
-  <a href="consulta.html">🔎 Consultar empleados</a>
-</nav>
 
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="logo">RR.HH. Suite</div>
+  <nav class="nav">
+    <div style="font-size:12px;opacity:.7;margin:8px 0">Reclutamiento</div>
+    <a href="formularioweb.html">Formulario</a>
+    <a href="consulta.html" class="active">Consulta</a>
+    <div style="font-size:12px;opacity:.7;margin:12px 0 6px">Operación</div>
+    <a href="empleados.html">Empleados</a>
+    <a href="contratos.html">Contratos</a>
+    <a href="nomina.html">Nómina</a>
+  </nav>
+</aside>
+
+<main class="main">
   <div class="card">
-    <h1>Consulta de Empleados</h1>
+    <h1>Consulta de Candidatos</h1>
+
+    <div id="msg"></div>
 
     <div class="filters">
-      <div>
-        <label><input type="radio" name="modo" value="fecha" checked> Filtrar por Mes + Año</label><br>
-        <label>Año:</label>
+      <div class="box">
+        <div style="margin-bottom:8px">
+          <label><input type="radio" name="modo" value="fecha" checked> Filtrar por Mes + Año</label>
+        </div>
+        <label>Año</label>
         <select id="filtroAno">
           <option value="TODOS">TODOS</option>
-          <option value="2023">2023</option>
-          <option value="2024">2024</option>
-          <option value="2025">2025</option>
+          <option>2023</option><option>2024</option><option>2025</option>
         </select>
-        <label>Mes:</label>
+        <label>Mes</label>
         <select id="filtroMes">
           <option value="TODOS">TODOS</option>
-          <option value="1">Enero</option>
-          <option value="2">Febrero</option>
-          <option value="3">Marzo</option>
-          <option value="4">Abril</option>
-          <option value="5">Mayo</option>
-          <option value="6">Junio</option>
-          <option value="7">Julio</option>
-          <option value="8">Agosto</option>
-          <option value="9">Septiembre</option>
-          <option value="10">Octubre</option>
-          <option value="11">Noviembre</option>
-          <option value="12">Diciembre</option>
+          <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+          <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+        <span style="display:inline-block;margin-left:10px"></span>
+        <label>Estado</label>
+        <select id="filtroEstado">
+          <option value="">(Todos)</option>
+          <option value="EN_REVISION">En revisión</option>
+          <option value="CANCELADO">Cancelado</option>
+          <option value="APROBADO">Aprobado</option>
         </select>
       </div>
-      <div>
-        <label><input type="radio" name="modo" value="grupo"> Filtrar por Grupo (rango)</label><br>
-        <label>Desde:</label>
-        <input type="number" id="grupoInicio" min="1" style="width:60px">
-        <label>Hasta:</label>
-        <input type="number" id="grupoFin" min="1" style="width:60px">
+
+      <div class="box">
+        <div style="margin-bottom:8px">
+          <label><input type="radio" name="modo" value="grupo"> Filtrar por Grupo (rango)</label>
+        </div>
+        <label>Desde</label>
+        <input id="grupoInicio" type="number" min="1" style="width:110px" />
+        <label>Hasta</label>
+        <input id="grupoFin" type="number" min="1" style="width:110px" />
+        <div style="font-size:12px;color:#9CA3AF;margin-top:6px">
+          Ej.: 49–52 (si solo “Desde”, filtra ese grupo exacto).
+        </div>
       </div>
     </div>
 
-    <div style="text-align:center">
+    <div style="display:flex;gap:10px;align-items:center">
       <button id="btnConsultar">Consultar</button>
+      <button id="btnLimpiar" class="secondary">Limpiar</button>
     </div>
 
     <table id="tabla">
       <thead>
         <tr>
-          <th>Nombre</th>
-          <th>Sede / Turno</th>
-          <th>Grupo</th>
-          <th>Fecha Registro</th>
+          <th>ID</th>
           <th>DNI</th>
-          <th>Certificados</th>
-          <th>Antecedentes</th>
+          <th>Nombre</th>
+          <th>Sede</th>
+          <th>Turno</th>
+          <th>Grupo</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th>DNI Doc</th>
+          <th>Certif.</th>
+          <th>Anteced.</th>
           <th>Médicos</th>
-          <th>Capacitación</th>
+          <th>Capacit.</th>
+          <th>CV</th>
           <th>Acciones</th>
         </tr>
       </thead>
       <tbody></tbody>
     </table>
+
   </div>
+</main>
 
-  <script>
-    const API_URL = "https://empleados-api-o6yy.onrender.com/api/empleados";
+<script>
+const API_BASE = "https://empleados-api-XXXX.onrender.com"; // <-- CAMBIA ESTO
+const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
-    document.getElementById("btnConsultar").addEventListener("click", async ()=>{
-      const modo = document.querySelector("input[name='modo']:checked").value;
-      let url = API_URL;
+function showMsg(type, text){
+  const box = document.getElementById('msg');
+  box.className = type==='ok'?'ok':'err';
+  box.textContent = text;
+  box.style.display = 'block';
+}
+function clearMsg(){ const box = document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
 
-      if(modo === "fecha"){
-        const ano = document.getElementById("filtroAno").value;
-        const mes = document.getElementById("filtroMes").value;
-        if(mes !== "TODOS" && ano === "TODOS"){
-          alert("Si seleccionas un mes específico, debes elegir un año específico.");
-          return;
-        }
-        url += `?ano=${ano}&mes=${mes}`;
-      } else {
-        const inicio = document.getElementById("grupoInicio").value;
-        const fin = document.getElementById("grupoFin").value;
-        if(!inicio && !fin){
-          url += `?grupo=TODOS`;
-        } else if(inicio && !fin){
-          url += `?grupoInicio=${inicio}&grupoFin=${inicio}`;
-        } else if(inicio && fin){
-          url += `?grupoInicio=${inicio}&grupoFin=${fin}`;
-        } else if(!inicio && fin){
-          url += `?grupoInicio=1&grupoFin=${fin}`;
-        }
-      }
+document.querySelectorAll('.nav a').forEach(a=>{
+  if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
+});
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        renderTabla(data);
-      } catch(e){ alert("Error al consultar"); }
+document.getElementById("btnConsultar").addEventListener("click", consultar);
+document.getElementById("btnLimpiar").addEventListener("click", ()=>{
+  document.getElementById("filtroAno").value = "TODOS";
+  document.getElementById("filtroMes").value = "TODOS";
+  document.getElementById("filtroEstado").value = "";
+  document.getElementById("grupoInicio").value = "";
+  document.getElementById("grupoFin").value = "";
+  document.querySelector("input[name='modo'][value='fecha']").checked = true;
+  clearMsg();
+  renderTabla([]);
+});
+
+async function consultar(){
+  clearMsg();
+  const modo = document.querySelector("input[name='modo']:checked").value;
+  const estado = document.getElementById("filtroEstado").value;
+
+  let url = new URL(API_CANDIDATOS);
+
+  if(modo === "fecha"){
+    const ano = document.getElementById("filtroAno").value;
+    const mes = document.getElementById("filtroMes").value;
+    if (mes !== "TODOS" && ano === "TODOS"){
+      showMsg('err', "Si seleccionas un mes específico, el año no puede ser TODOS.");
+      return;
+    }
+    url.searchParams.set("ano", ano);
+    url.searchParams.set("mes", mes);
+  } else {
+    const ini = document.getElementById("grupoInicio").value.trim();
+    const fin = document.getElementById("grupoFin").value.trim();
+    if (ini && !fin) { url.searchParams.set("grupoInicio", ini); url.searchParams.set("grupoFin", ini); }
+    if (ini && fin)  { url.searchParams.set("grupoInicio", ini); url.searchParams.set("grupoFin", fin); }
+  }
+  if (estado) url.searchParams.set("estado", estado);
+
+  try{
+    const res = await fetch(url.toString());
+    if(!res.ok){
+      const clone=res.clone(); let detalle="";
+      try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
+      throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
+    }
+    const data = await res.json();
+    renderTabla(data);
+    if (data.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
+  }catch(e){
+    console.error(e);
+    showMsg('err', `Error al consultar: ${e.message}`);
+  }
+}
+
+function tagEstado(estado){
+  if (estado === 'APROBADO') return `<span class="tag apr">Aprobado</span>`;
+  if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
+  return `<span class="tag rev">En revisión</span>`;
+}
+
+function linkDoc(url, id){
+  return url ? `<a href="${url}" target="_blank">📎 Descargar</a>`
+             : `<a href="formularioweb.html?id=${id}">⬆️ Subir</a>`;
+}
+
+function renderTabla(lista){
+  const tbody = document.querySelector("#tabla tbody");
+  tbody.innerHTML = "";
+  if(!lista || lista.length===0){
+    tbody.innerHTML = `<tr><td colspan="15">No se encontraron registros</td></tr>`;
+    return;
+  }
+  for(const c of lista){
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${c.id}</td>
+      <td>${c.dni}</td>
+      <td>${c.nombre_completo}</td>
+      <td>${c.sede || ''}</td>
+      <td>${c.turno_horario || ''}</td>
+      <td>${c.grupo || ''}</td>
+      <td>${tagEstado(c.estado)}</td>
+      <td>${(c.fecha||'').slice(0,10)}</td>
+      <td>${linkDoc(c.dni, c.id)}</td>
+      <td>${linkDoc(c.certificados, c.id)}</td>
+      <td>${linkDoc(c.antecedentes, c.id)}</td>
+      <td>${linkDoc(c.medicos, c.id)}</td>
+      <td>${linkDoc(c.capacitacion, c.id)}</td>
+      <td>${linkDoc(c.cv, c.id)}</td>
+      <td>
+        ${c.estado !== 'APROBADO' ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
+        <a href="formularioweb.html?id=${c.id}">Editar</a>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+}
+
+async function aprobar(id){
+  if(!confirm("¿Marcar candidato como APROBADO?")) return;
+  try{
+    const res = await fetch(`${API_CANDIDATOS}/${id}/estado`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ estado: "APROBADO" })
     });
-
-    function renderTabla(lista){
-      const tbody = document.querySelector("#tabla tbody");
-      tbody.innerHTML = "";
-      if(lista.length === 0){
-        tbody.innerHTML = "<tr><td colspan='10'>No se encontraron registros</td></tr>";
-        return;
-      }
-      lista.forEach(emp=>{
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${emp.nombre}</td>
-          <td>${emp.sede}</td>
-          <td>${emp.grupo}</td>
-          <td>${emp.fecha || ""}</td>
-          <td>${renderDoc(emp.id, emp.dni)}</td>
-          <td>${renderDoc(emp.id, emp.certificados)}</td>
-          <td>${renderDoc(emp.id, emp.antecedentes)}</td>
-          <td>${renderDoc(emp.id, emp.medicos)}</td>
-          <td>${renderDoc(emp.id, emp.capacitacion)}</td>
-          <td><a href="formEmpleado.html?id=${emp.id}">Editar</a></td>
-        `;
-        tbody.appendChild(tr);
-      });
+    if(!res.ok){
+      const clone=res.clone(); let detalle="";
+      try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
+      throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
+    showMsg('ok', 'Candidato aprobado.');
+    consultar(); // recarga la tabla
+  }catch(e){
+    console.error(e);
+    showMsg('err', `Error al aprobar: ${e.message}`);
+  }
+}
 
-    function renderDoc(id, url){
-      if(url){
-        return `<a href="${url}" target="_blank">📎 Descargar</a>`;
-      } else {
-        return `<a href="formEmpleado.html?id=${id}">⬆️ Subir</a>`;
-      }
-    }
-  </script>
+// primera carga
+consultar();
+</script>
 </body>
 </html>
+
+
 
 
