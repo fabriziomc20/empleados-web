@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Usuario / Configuración</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--brand:#2563eb;}
+  *{box-sizing:border-box} body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  .sidebar{width:260px;background:#0b1220;min-height:100vh;padding:18px;position:sticky;top:0}
+  .logo{font-weight:700;margin-bottom:14px}
+  .nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--text);text-decoration:none;margin:6px 0}
+  .nav a.active{background:var(--brand)} .nav a:hover{background:#1f2937}
+  .sep{height:1px;background:#1f2937;margin:12px 0}
+  .caption{font-size:12px;opacity:.7;margin:8px 0}
+  .main{flex:1;padding:20px}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px;max-width:1200px}
+  .card{background:var(--panel);border-radius:14px;padding:16px}
+  h2{margin:6px 0 12px}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+  input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .actions{margin-top:10px;display:flex;gap:10px}
+  button{background:var(--brand);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+  button.secondary{background:#374151}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{border:1px solid #374151;padding:8px;text-align:center;font-size:14px}
+  th{background:#1f2937}
+  a{color:#60a5fa;text-decoration:none}
+  #msg{display:none;margin-bottom:12px;padding:10px;border-radius:10px}
+  .ok{background:#065f46;color:#ecfdf5} .err{background:#7f1d1d;color:#fee2e2}
+  .small{font-size:12px;color:#9ca3af}
+  .inline-input{width:95%;padding:6px;border-radius:8px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">RR.HH. Suite</div>
+  <nav class="nav">
+    <div class="caption">Reclutamiento</div>
+    <a href="formularioweb.html">Formulario</a>
+    <a href="consulta.html">Consulta</a>
+    <div class="caption">Operación</div>
+    <a href="empleados.html">Empleados</a>
+    <a href="contratos.html">Contratos</a>
+    <a href="nomina.html">Nómina</a>
+    <div class="sep"></div>
+    <div class="caption">Usuario / Configuración</div>
+    <a href="config.html" class="active">Parámetros de Empresa</a>
+  </nav>
+</aside>
+
+<main class="main">
+  <div id="msg"></div>
+  <div class="grid">
+
+    <!-- EMPRESA -->
+    <div class="card">
+      <h2>Empresa</h2>
+      <div class="row">
+        <div>
+          <label>RUC</label>
+          <input id="empRuc" placeholder="20123456789">
+        </div>
+        <div>
+          <label>Razón Social</label>
+          <input id="empName" placeholder="Mi Empresa SAC">
+        </div>
+      </div>
+      <label>Logo URL (opcional)</label>
+      <input id="empLogo" placeholder="https://...">
+      <div class="actions">
+        <button id="btnEmpGuardar">Guardar/Actualizar</button>
+        <button class="secondary" id="btnEmpCargar">Cargar existente</button>
+      </div>
+      <div class="small">Solo manejaremos 1 empresa activa (la principal).</div>
+    </div>
+
+    <!-- SEDES -->
+    <div class="card">
+      <h2>Sedes</h2>
+      <div class="row">
+        <div><label>Código</label><input id="siteCode" placeholder="LIMA"></div>
+        <div><label>Nombre</label><input id="siteName" placeholder="Sede Lima"></div>
+      </div>
+      <div class="actions">
+        <button id="btnSiteAdd">Agregar</button>
+      </div>
+      <table id="tblSites"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- PROYECTOS -->
+    <div class="card">
+      <h2>Proyectos</h2>
+      <div class="row3">
+        <div><label>Código</label><input id="projCode" placeholder="GEN-LIMA"></div>
+        <div><label>Nombre</label><input id="projName" placeholder="Proyecto General Lima"></div>
+        <div>
+          <label>Sede</label>
+          <select id="projSite"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnProjAdd">Agregar</button>
+      </div>
+      <table id="tblProjects"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Sede</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <!-- TURNOS -->
+    <div class="card">
+      <h2>Turnos</h2>
+      <div class="row3">
+        <div><label>Nombre</label><input id="shiftName" placeholder="Mañana"></div>
+        <div><label>Inicio</label><input id="shiftStart" type="time" value="08:00"></div>
+        <div><label>Fin</label><input id="shiftEnd" type="time" value="17:00"></div>
+      </div>
+      <div class="actions">
+        <button id="btnShiftAdd">Agregar</button>
+      </div>
+      <table id="tblShifts"><thead><tr><th>ID</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API_BASE = "https://empleados-api-XXXX.onrender.com"; // <-- CAMBIA ESTO
+const EMP = `${API_BASE}/api/employer`;
+const SITES = `${API_BASE}/api/sites`;
+const PROJECTS = `${API_BASE}/api/projects`;
+const SHIFTS = `${API_BASE}/api/shifts`;
+
+function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
+function clearMsg(){ const box=document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
+
+document.querySelectorAll('.nav a').forEach(a=>{
+  if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
+});
+
+// ------------ EMPRESA ------------
+document.getElementById('btnEmpCargar').addEventListener('click', loadEmployer);
+document.getElementById('btnEmpGuardar').addEventListener('click', saveEmployer);
+
+async function loadEmployer(){
+  clearMsg();
+  try{
+    const res = await fetch(EMP);
+    if(!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    if(!data){ showMsg('ok','No hay empresa registrada aún.'); return; }
+    empRuc.value = data.ruc||''; empName.value=data.name||''; empLogo.value=data.logo_url||'';
+    showMsg('ok','Empresa cargada.');
+  }catch(e){ showMsg('err',`Error al cargar empresa: ${e.message}`); }
+}
+async function saveEmployer(){
+  clearMsg();
+  try{
+    const body = { ruc: empRuc.value.trim(), name: empName.value.trim(), logo_url: empLogo.value.trim()||null };
+    const res = await fetch(EMP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    showMsg('ok','Empresa guardada/actualizada.');
+  }catch(e){ showMsg('err',`Error al guardar empresa: ${e.message}`); }
+}
+
+// ------------ SEDES ------------
+async function reloadSites(){
+  const tbody = document.querySelector('#tblSites tbody'); tbody.innerHTML='';
+  try{
+    const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    fillSitesCombo(data);
+    data.forEach(s=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td>${s.id}</td>
+        <td><input class="inline-input" value="${s.code}" data-id="${s.id}" data-field="code"></td>
+        <td><input class="inline-input" value="${s.name}" data-id="${s.id}" data-field="name"></td>
+        <td>
+          <button onclick="updateSite(${s.id})">Guardar</button>
+          <button class="secondary" onclick="deleteSite(${s.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ showMsg('err',`Error al listar sedes: ${e.message}`); }
+}
+function fillSitesCombo(sites){
+  const sel = document.getElementById('projSite'); sel.innerHTML='';
+  sites.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.code} — ${s.name}`; sel.appendChild(o); });
+}
+document.getElementById('btnSiteAdd').addEventListener('click', async ()=>{
+  clearMsg();
+  try{
+    const body = { code: siteCode.value.trim(), name: siteName.value.trim() };
+    const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    siteCode.value=''; siteName.value=''; showMsg('ok','Sede creada.'); reloadSites();
+  }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
+});
+async function updateSite(id){
+  try{
+    const row = [...document.querySelectorAll('#tblSites input')].filter(i=>+i.dataset.id===id);
+    const payload = {}; row.forEach(i=> payload[i.dataset.field]=i.value.trim());
+    const res = await fetch(`${SITES}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Sede actualizada.');
+    reloadSites();
+  }catch(e){ showMsg('err',`Error al actualizar sede: ${e.message}`); }
+}
+async function deleteSite(id){
+  if(!confirm('¿Eliminar sede?')) return;
+  try{
+    const res = await fetch(`${SITES}/${id}`, { method:'DELETE' });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Sede eliminada.');
+    reloadSites();
+  }catch(e){ showMsg('err',`Error al eliminar sede: ${e.message}`); }
+}
+
+// ------------ PROYECTOS ------------
+async function reloadProjects(){
+  const tbody = document.querySelector('#tblProjects tbody'); tbody.innerHTML='';
+  try{
+    const res = await fetch(PROJECTS); if(!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    data.forEach(p=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td>${p.id}</td>
+        <td><input class="inline-input" value="${p.code}" data-id="${p.id}" data-field="code"></td>
+        <td><input class="inline-input" value="${p.name}" data-id="${p.id}" data-field="name"></td>
+        <td>
+          <select class="inline-input" data-id="${p.id}" data-field="site_id">
+            ${window._sitesCached.map(s=>`<option value="${s.id}" ${s.id===p.site_id?'selected':''}>${s.code} — ${s.name}</option>`).join('')}
+          </select>
+        </td>
+        <td>
+          <button onclick="updateProject(${p.id})">Guardar</button>
+          <button class="secondary" onclick="deleteProject(${p.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ showMsg('err',`Error al listar proyectos: ${e.message}`); }
+}
+document.getElementById('btnProjAdd').addEventListener('click', async ()=>{
+  clearMsg();
+  try{
+    const body = { code: projCode.value.trim(), name: projName.value.trim(), site_id: Number(projSite.value) || null };
+    const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    projCode.value=''; projName.value=''; showMsg('ok','Proyecto creado.');
+    await loadSitesCache(); reloadProjects();
+  }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
+});
+async function updateProject(id){
+  try{
+    const row = [...document.querySelectorAll('#tblProjects input, #tblProjects select')].filter(i=>+i.dataset.id===id);
+    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.type==='number' ? Number(i.value) : (i.value||null));
+    const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Proyecto actualizado.');
+    reloadProjects();
+  }catch(e){ showMsg('err',`Error al actualizar proyecto: ${e.message}`); }
+}
+async function deleteProject(id){
+  if(!confirm('¿Eliminar proyecto?')) return;
+  try{
+    const res = await fetch(`${PROJECTS}/${id}`, { method:'DELETE' });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Proyecto eliminado.');
+    reloadProjects();
+  }catch(e){ showMsg('err',`Error al eliminar proyecto: ${e.message}`); }
+}
+
+// ------------ TURNOS ------------
+async function reloadShifts(){
+  const tbody = document.querySelector('#tblShifts tbody'); tbody.innerHTML='';
+  try{
+    const res = await fetch(SHIFTS); if(!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    data.forEach(sh=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `
+        <td>${sh.id}</td>
+        <td><input class="inline-input" value="${sh.name}" data-id="${sh.id}" data-field="name"></td>
+        <td><input class="inline-input" value="${sh.start_time}" data-id="${sh.id}" data-field="start_time" type="time"></td>
+        <td><input class="inline-input" value="${sh.end_time}" data-id="${sh.id}" data-field="end_time" type="time"></td>
+        <td>
+          <button onclick="updateShift(${sh.id})">Guardar</button>
+          <button class="secondary" onclick="deleteShift(${sh.id})">Eliminar</button>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }catch(e){ showMsg('err',`Error al listar turnos: ${e.message}`); }
+}
+document.getElementById('btnShiftAdd').addEventListener('click', async ()=>{
+  clearMsg();
+  try{
+    const body = { name: shiftName.value.trim(), start_time: shiftStart.value, end_time: shiftEnd.value };
+    const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    shiftName.value=''; showMsg('ok','Turno creado.'); reloadShifts();
+  }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
+});
+async function updateShift(id){
+  try{
+    const row = [...document.querySelectorAll('#tblShifts input')].filter(i=>+i.dataset.id===id);
+    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.value);
+    const res = await fetch(`${SHIFTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Turno actualizado.'); reloadShifts();
+  }catch(e){ showMsg('err',`Error al actualizar turno: ${e.message}`); }
+}
+async function deleteShift(id){
+  if(!confirm('¿Eliminar turno?')) return;
+  try{
+    const res = await fetch(`${SHIFTS}/${id}`, { method:'DELETE' });
+    if(!res.ok) throw new Error(`${res.status}`);
+    showMsg('ok','Turno eliminado.'); reloadShifts();
+  }catch(e){ showMsg('err',`Error al eliminar turno: ${e.message}`); }
+}
+
+// --------- helper: cache sites para Projects ---------
+async function loadSitesCache(){
+  const res = await fetch(SITES);
+  window._sitesCached = res.ok ? await res.json() : [];
+  fillSitesCombo(window._sitesCached);
+}
+
+// primera carga
+(async function init(){
+  clearMsg();
+  await loadSitesCache();
+  await reloadSites();
+  await reloadProjects();
+  await reloadShifts();
+  // intenta cargar empresa
+  try{ await loadEmployer(); }catch{}
+})();
+</script>
+</body>
+</html>
