@@ -1,298 +1,159 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Formulario de Empleado – Carga de Documentos</title>
-  <style>
-    body { margin:0; font-family:sans-serif; background:#0f172a; color:#e5e7eb; padding:20px; }
-    .card { max-width:960px; margin:auto; background:#111827; border-radius:12px; padding:20px; }
-    h1 { text-align:center; margin:12px 0 16px 0; }
-    .field { margin-bottom:16px; display:flex; flex-direction:column; }
-    label { margin-bottom:6px; color:#94a3b8; font-size:14px; }
-    input[type="text"] { padding:10px; border-radius:8px; border:1px solid #1f2937; background:#0b1220; color:white; }
-
-    .dropzone { border:2px dashed #334155; border-radius:10px; padding:20px; text-align:center; cursor:pointer; transition:border-color .15s, background .15s; }
-    .dropzone.dragover { border-color:#60a5fa; background:#0b2747; }
-    .dropzone input { display:none; }
-    .files { margin-top:8px; font-size:14px; color:#cbd5e1; }
-
-    .actions { display:flex; justify-content:space-between; margin-top:20px; gap:12px; flex-wrap:wrap; }
-    .btn { padding:10px 16px; border:none; border-radius:8px; cursor:pointer; font-weight:600; text-decoration:none; display:inline-block; }
-    .btn.primary { background:#2563eb; color:white; }
-    .btn.secondary { background:#374151; color:white; }
-
-    /* NAV */
-    .topnav {
-      display:flex; gap:12px; align-items:center;
-      background:#0b1220; padding:10px 14px; border-radius:10px;
-      margin:0 auto 16px auto; max-width:1200px; border:1px solid #1f2937;
-    }
-    .topnav a {
-      color:#e5e7eb; text-decoration:none; background:#1f2937;
-      padding:8px 12px; border-radius:8px; font-weight:600; font-size:14px;
-    }
-    .topnav a:hover { background:#374151; text-decoration:none; }
-  </style>
+<meta charset="utf-8" />
+<title>Reclutamiento – Formulario</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+  :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--brand:#2563eb;}
+  *{box-sizing:border-box} body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  .sidebar{width:260px;background:#0b1220;min-height:100vh;padding:18px;position:sticky;top:0}
+  .logo{font-weight:700;margin-bottom:14px}
+  .nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--text);text-decoration:none;margin:6px 0}
+  .nav a.active{background:var(--brand)} .nav a:hover{background:#1f2937}
+  .main{flex:1;padding:20px}
+  .card{background:var(--panel);padding:18px;border-radius:14px;max-width:1100px}
+  h1{margin:6px 0 14px} label{display:block;margin-top:10px;font-size:14px;color:var(--muted)}
+  input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .actions{display:flex;gap:10px;margin-top:14px}
+  button{background:var(--brand);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
+  button.secondary{background:#374151}
+  .drop{border:2px dashed #475569;border-radius:12px;padding:14px;text-align:center;margin-top:10px;cursor:pointer;background:#0b1220}
+  .file-list{list-style:none;margin:6px 0 0;padding:0}
+  .file-list li{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid #374151;border-radius:8px;margin:6px 0}
+  .file-list button{background:#374151;border:none;color:#e5e7eb;padding:4px 8px;border-radius:6px;cursor:pointer}
+  #msg{display:none;margin:12px 0;padding:10px;border-radius:10px}
+  .ok{background:#065f46;color:#ecfdf5} .err{background:#7f1d1d;color:#fee2e2}
+</style>
 </head>
 <body>
-  <!-- NAV simple entre páginas -->
-  <nav class="topnav">
-    <a href="formularioweb.html">➕ Nuevo empleado</a>
-    <a href="consulta.html">🔎 Consultar empleados</a>
-  </nav>
 
+<aside class="sidebar">
+  <div class="logo">RR.HH. Suite</div>
+  <nav class="nav">
+    <div style="font-size:12px;opacity:.7;margin:8px 0">Reclutamiento</div>
+    <a href="formularioweb.html" class="active">Formulario</a>
+    <a href="consulta.html">Consulta</a>
+    <div style="font-size:12px;opacity:.7;margin:12px 0 6px">Operación</div>
+    <a href="empleados.html">Empleados</a>
+    <a href="contratos.html">Contratos</a>
+    <a href="nomina.html">Nómina</a>
+  </nav>
+</aside>
+
+<main class="main">
   <div class="card">
-    <h1 id="titulo">Registro de Empleado</h1>
+    <h1>Formulario de Candidato</h1>
+    <div id="msg"></div>
 
     <form id="formEmpleado">
-      <div class="field">
-        <label>Nombre completo</label>
-        <input type="text" id="nombre" required>
+      <div class="row">
+        <div><label>DNI</label><input type="text" name="dni" required maxlength="12" /></div>
+        <div><label>Grupo</label><input type="text" name="grupo" /></div>
+        <div><label>Apellido Paterno</label><input type="text" name="apellido_paterno" required /></div>
+        <div><label>Apellido Materno</label><input type="text" name="apellido_materno" required /></div>
+        <div><label>Nombres</label><input type="text" name="nombres" required /></div>
+        <div><label>Sede</label><input type="text" name="sede" /></div>
+        <div><label>Turno / Horario</label><input type="text" name="turno_horario" placeholder="Mañana (08:00-16:00)" /></div>
       </div>
 
-      <div class="field">
-        <label>Sede / Turno</label>
-        <input type="text" id="sede" required>
-      </div>
+      <label>DNI (PDF/JPG/PNG)</label>
+      <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+      <ul id="dniList" class="file-list"></ul>
 
-      <div class="field">
-        <label>Grupo</label>
-        <input type="text" id="grupo" required>
-      </div>
+      <label>Certificados</label>
+      <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+      <ul id="certificadosList" class="file-list"></ul>
 
-      <!-- DNI -->
-      <div class="field">
-        <label>Foto de DNI</label>
-        <div class="dropzone" id="drop_dni">
-          <input type="file" id="file_dni" accept="application/pdf,image/*">
-          Suelta aquí tu DNI o haz clic.
-        </div>
-        <div id="files_dni" class="files"></div>
-      </div>
+      <label>Antecedentes</label>
+      <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+      <ul id="antecedentesList" class="file-list"></ul>
 
-      <!-- Certificados -->
-      <div class="field">
-        <label>Certificados</label>
-        <div class="dropzone" id="drop_certificados">
-          <input type="file" id="file_certificados" accept="application/pdf,image/*" multiple>
-          Suelta aquí certificados o haz clic (múltiples).
-        </div>
-        <div id="files_certificados" class="files"></div>
-      </div>
+      <label>Documentos Médicos</label>
+      <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+      <ul id="medicosList" class="file-list"></ul>
 
-      <!-- Antecedentes -->
-      <div class="field">
-        <label>Antecedentes</label>
-        <div class="dropzone" id="drop_antecedentes">
-          <input type="file" id="file_antecedentes" accept="application/pdf,image/*">
-          Suelta aquí antecedentes o haz clic.
-        </div>
-        <div id="files_antecedentes" class="files"></div>
-      </div>
+      <label>Certificados de Capacitación</label>
+      <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+      <ul id="capacitacionList" class="file-list"></ul>
 
-      <!-- Médicos -->
-      <div class="field">
-        <label>Documentos Médicos</label>
-        <div class="dropzone" id="drop_medicos">
-          <input type="file" id="file_medicos" accept="application/pdf,image/*">
-          Suelta aquí documentos médicos o haz clic.
-        </div>
-        <div id="files_medicos" class="files"></div>
-      </div>
+      <label>CV</label>
+      <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
+      <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
+      <ul id="cvList" class="file-list"></ul>
 
-      <!-- Capacitación -->
-      <div class="field">
-        <label>Certificados de Capacitación</label>
-        <div class="dropzone" id="drop_capacitacion">
-          <input type="file" id="file_capacitacion" accept="application/pdf,image/*" multiple>
-          Suelta aquí capacitaciones o haz clic (múltiples).
-        </div>
-        <div id="files_capacitacion" class="files"></div>
+      <div class="actions">
+        <button type="submit">Guardar</button>
+        <button type="button" class="secondary" id="btnReset">Limpiar</button>
       </div>
     </form>
-
-    <div class="actions">
-      <a href="consulta.html" class="btn secondary">Ver consultas</a>
-      <button type="button" class="btn secondary" id="btnReset">Limpiar</button>
-      <button type="button" class="btn primary" id="btnSubmit">Guardar formulario</button>
-    </div>
   </div>
+</main>
 
-  <script>
-    // Cambia esta URL si tu API es otra
-    const UPLOAD_URL = "https://empleados-api-o6yy.onrender.com/api/empleados";
+<script>
+document.querySelectorAll('.nav a').forEach(a=>{
+  if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
+});
+function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
+function fmtSize(b){ return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
 
-    let modo = "crear";
-    let empleadoId = null;
+function initDropzone({inputId, dropId, listId, multiple=true}){
+  const input=document.getElementById(inputId), drop=document.getElementById(dropId), list=document.getElementById(listId);
+  input._dt=new DataTransfer();
+  const openPicker=()=>input.click();
+  drop.addEventListener('click', openPicker); drop.addEventListener('dblclick', openPicker);
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background='#1f2937'}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background=''}));
+  drop.addEventListener('drop',e=>addFiles(Array.from(e.dataTransfer.files||[])));
+  input.addEventListener('change',()=>addFiles(Array.from(input.files||[])));
+  function addFiles(files){ for(const f of files){ if(!multiple && input._dt.files.length>0){ input._dt=new DataTransfer(); } input._dt.items.add(f); }
+    input.files=input._dt.files; renderList(); }
+  function removeAt(idx){ const dt=new DataTransfer(); Array.from(input._dt.files).forEach((f,i)=>{ if(i!==idx) dt.items.add(f); });
+    input._dt=dt; input.files=input._dt.files; renderList(); }
+  function renderList(){ list.innerHTML=''; Array.from(input._dt.files).forEach((f,i)=>{ const li=document.createElement('li');
+    li.innerHTML=`<span title="${f.name}">${f.name} · ${fmtSize(f.size)}</span>`; const btn=document.createElement('button'); btn.type='button'; btn.textContent='❌ Quitar';
+    btn.addEventListener('click',()=>removeAt(i)); li.appendChild(btn); list.appendChild(li); }); }
+  return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML=''; } };
+}
+const dzDni=initDropzone({inputId:'dniInput',dropId:'dniDrop',listId:'dniList',multiple:true});
+const dzCertificados=initDropzone({inputId:'certificadosInput',dropId:'certificadosDrop',listId:'certificadosList',multiple:true});
+const dzAntecedentes=initDropzone({inputId:'antecedentesInput',dropId:'antecedentesDrop',listId:'antecedentesList',multiple:true});
+const dzMedicos=initDropzone({inputId:'medicosInput',dropId:'medicosDrop',listId:'medicosList',multiple:true});
+const dzCapacitacion=initDropzone({inputId:'capacitacionInput',dropId:'capacitacionDrop',listId:'capacitacionList',multiple:true});
+const dzCV=initDropzone({inputId:'cvInput',dropId:'cvDrop',listId:'cvList',multiple:false});
 
-    // --- Drag & Drop con soporte de click/dblclick y vista de archivos ---
-    function setupDrop(idInput, idFiles, idDrop, {accept=[], maxCount=null} = {}) {
-      const input = document.getElementById(idInput);
-      const filesContainer = document.getElementById(idFiles);
-      const dropzone = document.getElementById(idDrop);
+const API_BASE = "https://empleados-api-XXXX.onrender.com"; // <--- CAMBIA
+const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
-      // Click & doble click -> abrir selector
-      ["click","dblclick"].forEach(evt => dropzone.addEventListener(evt, () => input.click()));
-
-      // Cuando cambian archivos vía selector
-      input.addEventListener("change", () => renderFilesList(input.files, filesContainer));
-
-      // Utilidades
-      const prevent = e => { e.preventDefault(); e.stopPropagation(); };
-      const setDrag = on => dropzone.classList.toggle("dragover", on);
-
-      // Eventos drag & drop
-      ["dragenter","dragover"].forEach(evt => {
-        dropzone.addEventListener(evt, e => { prevent(e); setDrag(true); });
-      });
-      ["dragleave","dragend"].forEach(evt => {
-        dropzone.addEventListener(evt, e => { prevent(e); setDrag(false); });
-      });
-
-      dropzone.addEventListener("drop", e => {
-        prevent(e); setDrag(false);
-        const dropped = Array.from(e.dataTransfer.files || []);
-
-        // Filtro por tipo (opcional)
-        const filtered = accept.length
-          ? dropped.filter(f => accept.some(a => f.type?.startsWith(a) || f.name.toLowerCase().endsWith(a)))
-          : dropped;
-
-        // Límite de cantidad (opcional)
-        const current = Array.from(input.files || []);
-        let toAssign = [...current, ...filtered];
-        if (maxCount && toAssign.length > maxCount) {
-          toAssign = toAssign.slice(0, maxCount);
-          alert(`Se permiten hasta ${maxCount} archivos en este campo.`);
-        }
-
-        // Asignar al input (crear FileList)
-        const dt = new DataTransfer();
-        toAssign.forEach(f => dt.items.add(f));
-        input.files = dt.files;
-
-        renderFilesList(input.files, filesContainer);
-      });
-
-      function renderFilesList(fileList, container){
-        container.innerHTML = "";
-        const arr = Array.from(fileList || []);
-        if (arr.length === 0) {
-          container.textContent = "Suelta aquí tus archivos o haz clic.";
-          return;
-        }
-        arr.forEach(f => {
-          const div = document.createElement("div");
-          div.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
-          container.appendChild(div);
-        });
-      }
-
-      // Texto inicial si está vacío
-      if (!filesContainer.textContent.trim()) {
-        filesContainer.textContent = "Suelta aquí tus archivos o haz clic.";
-      }
-    }
-
-    // Inicializar dropzones con límites
-    setupDrop("file_dni","files_dni","drop_dni", {
-      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
-      maxCount: 2
-    });
-    setupDrop("file_certificados","files_certificados","drop_certificados", {
-      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
-      maxCount: 10
-    });
-    setupDrop("file_antecedentes","files_antecedentes","drop_antecedentes", {
-      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
-      maxCount: 5
-    });
-    setupDrop("file_medicos","files_medicos","drop_medicos", {
-      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
-      maxCount: 5
-    });
-    setupDrop("file_capacitacion","files_capacitacion","drop_capacitacion", {
-      accept: ["application/pdf","image/", ".pdf", ".jpg", ".jpeg", ".png"],
-      maxCount: 10
-    });
-
-    // Cargar modo edición si viene ?id=...
-    async function cargarEmpleadoSiExiste() {
-      const params = new URLSearchParams(window.location.search);
-      if(params.has("id")) {
-        empleadoId = params.get("id");
-        modo = "editar";
-        document.getElementById("btnSubmit").textContent = "Actualizar";
-        document.getElementById("titulo").textContent = "Editar Empleado";
-        try {
-          const res = await fetch(`${UPLOAD_URL}/${empleadoId}`);
-          const data = await res.json();
-          document.getElementById("nombre").value = data.nombre || "";
-          document.getElementById("sede").value = data.sede || "";
-          document.getElementById("grupo").value = data.grupo || "";
-        } catch(e){ console.error(e); }
-      }
-    }
-
-    // Guardar
-    document.getElementById("btnSubmit").addEventListener("click", async ()=>{
-      const nombre = document.getElementById("nombre").value.trim();
-      const sede = document.getElementById("sede").value.trim();
-      const grupo = document.getElementById("grupo").value.trim();
-      if(!nombre || !sede || !grupo){ alert("Completa todos los campos"); return; }
-
-      const fd = new FormData();
-      fd.append("nombre", nombre);
-      fd.append("sede", sede);
-      fd.append("grupo", grupo);
-
-      ["dni","certificados","antecedentes","medicos","capacitacion"].forEach(tipo=>{
-        const files = document.getElementById("file_"+tipo).files;
-        Array.from(files).forEach(f=> fd.append(tipo, f));
-      });
-
-      try {
-        const url = modo === "crear" ? UPLOAD_URL : `${UPLOAD_URL}/${empleadoId}`;
-        const method = modo === "crear" ? "POST" : "PUT";
-
-        const res = await fetch(url, { method, body: fd });
-
-        if (!res.ok) {
-          let detalle = "";
-          try {
-            const data = await res.json();
-            detalle = data?.error || JSON.stringify(data);
-          } catch {
-            detalle = await res.text();
-          }
-          throw new Error(`HTTP ${res.status} – ${detalle || "Error desconocido"}`);
-        }
-
-        alert(modo === "crear" ? "Empleado registrado" : "Empleado actualizado");
-      } catch (e) {
-        alert(`Error al enviar: ${e.message}`);
-        console.error(e);
-      }
-    });
-
-    // Limpiar
-    document.getElementById("btnReset").addEventListener("click", ()=>{
-      document.getElementById("formEmpleado").reset();
-      ["files_dni","files_certificados","files_antecedentes","files_medicos","files_capacitacion"]
-        .forEach(id => document.getElementById(id).textContent = "Suelta aquí tus archivos o haz clic.");
-    });
-
-    // Atajos: Alt+N (nuevo), Alt+C (consulta)
-    document.addEventListener("keydown", (e) => {
-      if (e.altKey && (e.key === "n" || e.key === "N")) window.location.href = "formularioweb.html";
-      if (e.altKey && (e.key === "c" || e.key === "C")) window.location.href = "consulta.html";
-    });
-
-    cargarEmpleadoSiExiste();
-  </script>
+document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+  const fd = new FormData(ev.target);
+  try{
+    const res = await fetch(API_CANDIDATOS, { method:"POST", body: fd });
+    if(!res.ok){ const clone=res.clone(); let detalle="";
+      try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
+      throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`); }
+    showMsg('ok','Candidato registrado');
+    dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
+    ev.target.reset();
+    // setTimeout(()=> location.href='consulta.html', 600); // opcional
+  }catch(e){ console.error(e); showMsg('err',`Error al enviar: ${e.message}`); }
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
+  document.getElementById('formEmpleado').reset();
+});
+</script>
 </body>
 </html>
+
+
 
 
 
