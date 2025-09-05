@@ -6,11 +6,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--brand:#2563eb;}
-  *{box-sizing:border-box} body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
+  *{box-sizing:border-box}
+  body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
   .sidebar{width:260px;background:#0b1220;min-height:100vh;padding:18px;position:sticky;top:0}
   .logo{font-weight:700;margin-bottom:14px}
   .nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--text);text-decoration:none;margin:6px 0}
-  .nav a.active{background:var(--brand)} .nav a:hover{background:#1f2937}
+  .nav a.active{background:var(--brand)}
+  .nav a:hover{background:#1f2937}
   .sep{height:1px;background:#1f2937;margin:12px 0}
   .caption{font-size:12px;opacity:.7;margin:8px 0}
   .main{flex:1;padding:20px}
@@ -21,7 +23,7 @@
   input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
   .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-  .actions{margin-top:10px;display:flex;gap:10px}
+  .actions{margin-top:10px;display:flex;gap:10px;flex-wrap:wrap}
   button{background:var(--brand);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
   button.secondary{background:#374151}
   table{width:100%;border-collapse:collapse;margin-top:12px}
@@ -29,9 +31,16 @@
   th{background:#1f2937}
   a{color:#60a5fa;text-decoration:none}
   #msg{display:none;margin-bottom:12px;padding:10px;border-radius:10px}
-  .ok{background:#065f46;color:#ecfdf5} .err{background:#7f1d1d;color:#fee2e2}
+  .ok{background:#065f46;color:#ecfdf5}
+  .err{background:#7f1d1d;color:#fee2e2}
   .small{font-size:12px;color:#9ca3af}
-  .inline-input{width:95%;padding:6px;border-radius:8px;border:1px solid #334155;background:#0b1220;color:var(--text)}
+
+  /* Modal */
+  .modal-backdrop{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;z-index:50}
+  .modal{background:#111827;border-radius:14px;max-width:900px;width:90%;max-height:80vh;overflow:auto;padding:16px}
+  .modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+  .modal input[type="search"]{width:260px;padding:8px;border-radius:8px;border:1px solid #334155;background:#0b1220;color:#e5e7eb}
+  .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px}
 </style>
 </head>
 <body>
@@ -88,41 +97,38 @@
       <div class="actions">
         <button id="btnTaxSave">Guardar/Actualizar Régimen</button>
         <button class="secondary" id="btnTaxReload">Recargar</button>
+        <button class="secondary" id="btnTaxHistory">Ver historial</button>
       </div>
       <div class="small" id="taxCurrent"></div>
-
-      <table id="tblTaxHistory">
-        <thead>
-          <tr><th>ID</th><th>Régimen</th><th>Desde</th><th>Hasta</th></tr>
-        </thead>
-        <tbody></tbody>
-      </table>
     </div>
 
     <!-- SEDES -->
     <div class="card">
       <h2>Sedes</h2>
       <div class="row">
-        <div><label>Código</label><input id="siteCode" placeholder="LIMA"></div>
-        <div><label>Nombre</label><input id="siteName" placeholder="Sede Lima"></div>
+        <div><label>Nombre de la Sede</label><input id="siteName" placeholder="Sede Lima"></div>
       </div>
-      <div class="actions"><button id="btnSiteAdd">Agregar</button></div>
-      <table id="tblSites"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <div class="actions">
+        <button id="btnSiteAdd">Agregar</button>
+        <button class="secondary" id="btnSitesView">Ver todo</button>
+      </div>
     </div>
 
     <!-- PROYECTOS -->
     <div class="card">
       <h2>Proyectos</h2>
       <div class="row3">
-        <div><label>Código</label><input id="projCode" placeholder="GEN-LIMA"></div>
-        <div><label>Nombre</label><input id="projName" placeholder="Proyecto General Lima"></div>
+        <div><label>Nombre del Proyecto</label><input id="projName" placeholder="Proyecto General Lima"></div>
         <div>
           <label>Sede</label>
           <select id="projSite"></select>
         </div>
+        <div class="small">El código interno se genera automáticamente.</div>
       </div>
-      <div class="actions"><button id="btnProjAdd">Agregar</button></div>
-      <table id="tblProjects"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Sede</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <div class="actions">
+        <button id="btnProjAdd">Agregar</button>
+        <button class="secondary" id="btnProjectsView">Ver todo</button>
+      </div>
     </div>
 
     <!-- TURNOS -->
@@ -133,15 +139,37 @@
         <div><label>Inicio</label><input id="shiftStart" type="time" value="08:00"></div>
         <div><label>Fin</label><input id="shiftEnd" type="time" value="17:00"></div>
       </div>
-      <div class="actions"><button id="btnShiftAdd">Agregar</button></div>
-      <table id="tblShifts"><thead><tr><th>ID</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+      <div class="actions">
+        <button id="btnShiftAdd">Agregar</button>
+        <button class="secondary" id="btnShiftsView">Ver todo</button>
+      </div>
     </div>
 
   </div>
 </main>
 
+<!-- MODAL reutilizable -->
+<div id="modalWrap" class="modal-backdrop">
+  <div class="modal">
+    <header>
+      <h3 id="modalTitle">Listado</h3>
+      <div>
+        <input id="modalSearch" type="search" placeholder="Buscar…">
+        <button class="secondary" onclick="closeModal()">Cerrar</button>
+      </div>
+    </header>
+    <div id="modalContent"></div>
+    <div class="pager">
+      <button class="secondary" id="modalPrev">« Prev</button>
+      <span id="modalPageInfo" class="small"></span>
+      <button class="secondary" id="modalNext">Next »</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const API_BASE = "https://empleados-api-o6yy.onrender.com"; // <-- CAMBIA
+/* ========== CONFIG ========== */
+const API_BASE = "https://empleados-api-o6yy.onrender.com"; // ⚠️ CAMBIA a tu URL si difiere
 const EMP = `${API_BASE}/api/employer`;
 const TAX_REGIMES = `${API_BASE}/api/regimes/tax`;
 const EMP_TAX = `${API_BASE}/api/employer/tax`;
@@ -150,14 +178,16 @@ const SITES = `${API_BASE}/api/sites`;
 const PROJECTS = `${API_BASE}/api/projects`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
+/* ========== UI helpers ========== */
 function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function clearMsg(){ const box=document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
 
+/* destacar link activo */
 document.querySelectorAll('.nav a').forEach(a=>{
   if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
 });
 
-// -------- Empresa --------
+/* ========== Empresa ========== */
 btnEmpCargar.addEventListener('click', loadEmployer);
 btnEmpGuardar.addEventListener('click', saveEmployer);
 
@@ -182,9 +212,10 @@ async function saveEmployer(){
   }catch(e){ showMsg('err',`Error al guardar empresa: ${e.message}`); }
 }
 
-// -------- Régimen Tributario --------
+/* ========== Régimen Tributario ========== */
 btnTaxReload.addEventListener('click', initTaxBlock);
 btnTaxSave.addEventListener('click', saveEmployerTax);
+document.getElementById('btnTaxHistory').addEventListener('click', openTaxHistoryModal);
 
 async function loadTaxRegimes(){
   const res = await fetch(TAX_REGIMES);
@@ -199,15 +230,8 @@ async function loadCurrentTax(){
   if(cur){ taxRegime.value = cur.code; }
 }
 async function loadTaxHistory(){
-  const tbody = document.querySelector('#tblTaxHistory tbody');
-  tbody.innerHTML = '';
   const res = await fetch(EMP_TAX_HISTORY);
-  const data = res.ok ? await res.json() : [];
-  data.forEach(h=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${h.id}</td><td>${h.name}</td><td>${h.valid_from}</td><td>${h.valid_to || '—'}</td>`;
-    tbody.appendChild(tr);
-  });
+  return res.ok ? await res.json() : [];
 }
 async function saveEmployerTax(){
   clearMsg();
@@ -220,152 +244,51 @@ async function saveEmployerTax(){
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
     showMsg('ok', 'Régimen actualizado.');
     await loadCurrentTax();
-    await loadTaxHistory();
   }catch(e){ showMsg('err', `Error al actualizar régimen: ${e.message}`); }
 }
 async function initTaxBlock(){
   taxValidFrom.value = new Date().toISOString().slice(0,10);
   await loadTaxRegimes();
   await loadCurrentTax();
-  await loadTaxHistory();
+}
+async function openTaxHistoryModal(){
+  const data = await loadTaxHistory();
+  openModal("Histórico de Régimen Tributario", data, [
+    { header:"ID", field:"id" },
+    { header:"Régimen", field:"name" },
+    { header:"Desde", field:"valid_from" },
+    { header:"Hasta", field:"valid_to" },
+  ], "tax");
 }
 
-// -------- Sedes --------
-async function reloadSites(){
-  const tbody = document.querySelector('#tblSites tbody'); tbody.innerHTML='';
-  try{
-    const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    window._sitesCached = data;
-    fillSitesCombo(data);
-    data.forEach(s=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `
-        <td>${s.id}</td>
-        <td><input class="inline-input" value="${s.code}" data-id="${s.id}" data-field="code"></td>
-        <td><input class="inline-input" value="${s.name}" data-id="${s.id}" data-field="name"></td>
-        <td>
-          <button onclick="updateSite(${s.id})">Guardar</button>
-          <button class="secondary" onclick="deleteSite(${s.id})">Eliminar</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){ showMsg('err',`Error al listar sedes: ${e.message}`); }
-}
-function fillSitesCombo(sites){
-  const sel = document.getElementById('projSite'); sel.innerHTML='';
-  sites.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.code} — ${s.name}`; sel.appendChild(o); });
-}
+/* ========== Sedes (sin código manual) ========== */
 btnSiteAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
-    const body = { code: siteCode.value.trim(), name: siteName.value.trim() };
+    const body = { name: siteName.value.trim() };
     const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    siteCode.value=''; siteName.value='';
-    showMsg('ok','Sede creada.'); reloadSites();
+    siteName.value='';
+    showMsg('ok','Sede creada.');
+    await reloadSites(); // refresca combo de proyectos
   }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
 });
-async function updateSite(id){
-  try{
-    const row = [...document.querySelectorAll('#tblSites input')].filter(i=>+i.dataset.id===id);
-    const payload = {}; row.forEach(i=> payload[i.dataset.field]=i.value.trim());
-    const res = await fetch(`${SITES}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Sede actualizada.'); reloadSites();
-  }catch(e){ showMsg('err',`Error al actualizar sede: ${e.message}`); }
-}
-async function deleteSite(id){
-  if(!confirm('¿Eliminar sede?')) return;
-  try{
-    const res = await fetch(`${SITES}/${id}`, { method:'DELETE' });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Sede eliminada.'); reloadSites();
-  }catch(e){
-    if(e.message.includes('409')) showMsg('err','No se puede eliminar: tiene proyectos asociados');
-    else showMsg('err',`Error al eliminar sede: ${e.message}`);
-  }
-}
 
-// -------- Proyectos --------
-async function reloadProjects(){
-  const tbody = document.querySelector('#tblProjects tbody'); tbody.innerHTML='';
-  try{
-    const res = await fetch(PROJECTS); if(!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    data.forEach(p=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `
-        <td>${p.id}</td>
-        <td><input class="inline-input" value="${p.code}" data-id="${p.id}" data-field="code"></td>
-        <td><input class="inline-input" value="${p.name}" data-id="${p.id}" data-field="name"></td>
-        <td>
-          <select class="inline-input" data-id="${p.id}" data-field="site_id">
-            ${ (window._sitesCached||[]).map(s=>`<option value="${s.id}" ${s.id===p.site_id?'selected':''}>${s.code} — ${s.name}</option>`).join('') }
-          </select>
-        </td>
-        <td>
-          <button onclick="updateProject(${p.id})">Guardar</button>
-          <button class="secondary" onclick="deleteProject(${p.id})">Eliminar</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){ showMsg('err',`Error al listar proyectos: ${e.message}`); }
-}
+/* ========== Proyectos (sin código manual) ========== */
 btnProjAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
-    const body = { code: projCode.value.trim(), name: projName.value.trim(), site_id: Number(projSite.value) || null };
+    const body = { name: projName.value.trim(), site_id: Number(projSite.value) || null };
+    if(!body.name || !body.site_id) throw new Error("Completa nombre y sede");
     const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    projCode.value=''; projName.value='';
+    projName.value='';
     showMsg('ok','Proyecto creado.');
-    await reloadSites(); // mantiene combo actualizado
     await reloadProjects();
   }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
 });
-async function updateProject(id){
-  try{
-    const row = [...document.querySelectorAll('#tblProjects input, #tblProjects select')].filter(i=>+i.dataset.id===id);
-    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.value);
-    const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Proyecto actualizado.'); reloadProjects();
-  }catch(e){ showMsg('err',`Error al actualizar proyecto: ${e.message}`); }
-}
-async function deleteProject(id){
-  if(!confirm('¿Eliminar proyecto?')) return;
-  try{
-    const res = await fetch(`${PROJECTS}/${id}`, { method:'DELETE' });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Proyecto eliminado.'); reloadProjects();
-  }catch(e){
-    if(e.message.includes('409')) showMsg('err','No se puede eliminar: tiene asignaciones/dependencias');
-    else showMsg('err',`Error al eliminar proyecto: ${e.message}`);
-  }
-}
 
-// -------- Turnos --------
-async function reloadShifts(){
-  const tbody = document.querySelector('#tblShifts tbody'); tbody.innerHTML='';
-  try{
-    const res = await fetch(SHIFTS); if(!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    data.forEach(sh=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML = `
-        <td>${sh.id}</td>
-        <td><input class="inline-input" value="${sh.name}" data-id="${sh.id}" data-field="name"></td>
-        <td><input class="inline-input" value="${sh.start_time}" data-id="${sh.id}" data-field="start_time" type="time"></td>
-        <td><input class="inline-input" value="${sh.end_time}" data-id="${sh.id}" data-field="end_time" type="time"></td>
-        <td>
-          <button onclick="updateShift(${sh.id})">Guardar</button>
-          <button class="secondary" onclick="deleteShift(${sh.id})">Eliminar</button>
-        </td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){ showMsg('err',`Error al listar turnos: ${e.message}`); }
-}
+/* ========== Turnos ========== */
 btnShiftAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
@@ -373,38 +296,151 @@ btnShiftAdd.addEventListener('click', async ()=>{
     const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
     shiftName.value='';
-    showMsg('ok','Turno creado.'); reloadShifts();
+    showMsg('ok','Turno creado.');
+    await reloadShifts();
   }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
 });
-async function updateShift(id){
+
+/* ========== Carga de combos/listas mínimas ========== */
+async function reloadSites(){
   try{
-    const row = [...document.querySelectorAll('#tblShifts input')].filter(i=>+i.dataset.id===id);
-    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.value);
-    const res = await fetch(`${SHIFTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Turno actualizado.'); reloadShifts();
-  }catch(e){ showMsg('err',`Error al actualizar turno: ${e.message}`); }
+    const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
+    const data = await res.json();
+    window._sitesCached = data || [];
+    // llenar combo de Proyectos
+    const sel = document.getElementById('projSite'); sel.innerHTML='';
+    (window._sitesCached||[]).forEach(s=>{
+      const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.name}`; sel.appendChild(o);
+    });
+  }catch(e){ showMsg('err',`Error al listar sedes: ${e.message}`); }
 }
-async function deleteShift(id){
-  if(!confirm('¿Eliminar turno?')) return;
-  try{
-    const res = await fetch(`${SHIFTS}/${id}`, { method:'DELETE' });
-    if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Turno eliminado.'); reloadShifts();
-  }catch(e){
-    if(e.message.includes('409')) showMsg('err','No se puede eliminar: está referenciado por asignaciones');
-    else showMsg('err',`Error al eliminar turno: ${e.message}`);
-  }
+async function reloadProjects(){
+  // solo para tener el modal actualizado cuando se abra
+  try{ const r = await fetch(PROJECTS); window._projectsCached = r.ok? await r.json() : []; }catch{}
+}
+async function reloadShifts(){
+  try{ const r = await fetch(SHIFTS); window._shiftsCached = r.ok? await r.json() : []; }catch{}
 }
 
-// -------- init --------
+/* ========== Modal genérico ========== */
+let modalState = { items:[], page:1, perPage:10, kind:"", columns:[] };
+
+function openModal(title, items, columns, kind){
+  modalState = { items, page:1, perPage:10, kind, columns };
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalSearch').value = "";
+  renderModal();
+  document.getElementById('modalWrap').style.display = "flex";
+}
+function closeModal(){ document.getElementById('modalWrap').style.display = "none"; }
+
+function renderModal(){
+  const q = document.getElementById('modalSearch').value.trim().toLowerCase();
+  const filtered = modalState.items.filter(it => JSON.stringify(it).toLowerCase().includes(q));
+  const total = filtered.length;
+  const maxPage = Math.max(1, Math.ceil(total / modalState.perPage));
+  if (modalState.page > maxPage) modalState.page = maxPage;
+
+  const start = (modalState.page - 1) * modalState.perPage;
+  const pageItems = filtered.slice(start, start + modalState.perPage);
+
+  const tbl = document.createElement('table');
+  tbl.innerHTML = `
+    <thead><tr>${modalState.columns.map(c=>`<th>${c.header}</th>`).join("")}<th>Acciones</th></tr></thead>
+    <tbody>
+      ${pageItems.map(it => `
+        <tr>
+          ${modalState.columns.map(c=>`<td>${it[c.field] ?? ""}</td>`).join("")}
+          <td>
+            <button onclick="modalEdit('${modalState.kind}', ${it.id})">Editar</button>
+            <button class="secondary" onclick="modalDelete('${modalState.kind}', ${it.id})">Eliminar</button>
+          </td>
+        </tr>`).join("")}
+    </tbody>`;
+  const content = document.getElementById('modalContent');
+  content.innerHTML = "";
+  content.appendChild(tbl);
+
+  document.getElementById('modalPageInfo').textContent = `Página ${modalState.page} / ${maxPage} — ${total} registros`;
+  document.getElementById('modalPrev').onclick = () => { if(modalState.page>1){ modalState.page--; renderModal(); } };
+  document.getElementById('modalNext').onclick = () => { if(modalState.page<maxPage){ modalState.page++; renderModal(); } };
+}
+document.getElementById('modalSearch').addEventListener('input', renderModal);
+
+async function modalEdit(kind, id){
+  if(kind==="sites"){
+    const row = (window._sitesCached||[]).find(x=>x.id===id);
+    const nuevo = prompt("Nuevo nombre de sede:", row?.name || "");
+    if(nuevo===null) return;
+    const res = await fetch(`${SITES}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: nuevo }) });
+    if(res.ok){ await reloadSites(); await openSitesModal(); }
+  }else if(kind==="projects"){
+    const row = (window._projectsCached||[]).find(x=>x.id===id);
+    const nuevo = prompt("Nuevo nombre de proyecto:", row?.name || "");
+    if(nuevo===null) return;
+    const payload = { name: nuevo, site_id: row?.site_id || null };
+    const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+    if(res.ok){ await reloadProjects(); await openProjectsModal(); }
+  }else if(kind==="shifts"){
+    const row = (window._shiftsCached||[]).find(x=>x.id===id);
+    const nuevo = prompt("Nuevo nombre del turno:", row?.name || "");
+    if(nuevo===null) return;
+    const res = await fetch(`${SHIFTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: nuevo }) });
+    if(res.ok){ await reloadShifts(); await openShiftsModal(); }
+  }
+}
+async function modalDelete(kind, id){
+  if(!confirm("¿Eliminar?")) return;
+  let url="";
+  if(kind==="sites") url=`${SITES}/${id}`;
+  if(kind==="projects") url=`${PROJECTS}/${id}`;
+  if(kind==="shifts") url=`${SHIFTS}/${id}`;
+  const r = await fetch(url, { method:'DELETE' });
+  if(!r.ok){ alert("No se pudo eliminar (puede estar referenciado)."); return; }
+  if(kind==="sites"){ await reloadSites(); await openSitesModal(); }
+  if(kind==="projects"){ await reloadProjects(); await openProjectsModal(); }
+  if(kind==="shifts"){ await reloadShifts(); await openShiftsModal(); }
+}
+
+/* Botones Ver todo */
+async function openSitesModal(){
+  const res = await fetch(SITES); const data = res.ok ? await res.json() : [];
+  window._sitesCached = data;
+  openModal("Sedes", data, [
+    { header:"ID", field:"id" },
+    { header:"Código", field:"code" },
+    { header:"Nombre", field:"name" },
+  ], "sites");
+}
+async function openProjectsModal(){
+  const res = await fetch(PROJECTS); const data = res.ok ? await res.json() : [];
+  window._projectsCached = data;
+  openModal("Proyectos", data, [
+    { header:"ID", field:"id" },
+    { header:"Código", field:"code" },
+    { header:"Nombre", field:"name" },
+    { header:"Sede", field:"site_name" },
+  ], "projects");
+}
+async function openShiftsModal(){
+  const res = await fetch(SHIFTS); const data = res.ok ? await res.json() : [];
+  window._shiftsCached = data;
+  openModal("Turnos", data, [
+    { header:"ID", field:"id" },
+    { header:"Nombre", field:"name" },
+    { header:"Inicio", field:"start_time" },
+    { header:"Fin", field:"end_time" },
+  ], "shifts");
+}
+document.getElementById('btnSitesView').addEventListener('click', openSitesModal);
+document.getElementById('btnProjectsView').addEventListener('click', openProjectsModal);
+document.getElementById('btnShiftsView').addEventListener('click', openShiftsModal);
+
+/* ========== init ========== */
 (async function init(){
   clearMsg();
-  // Empresa
   try{ await loadEmployer(); }catch{}
-  // Régimen
   await initTaxBlock();
-  // Catálogos
   await reloadSites();
   await reloadProjects();
   await reloadShifts();
@@ -412,4 +448,5 @@ async function deleteShift(id){
 </script>
 </body>
 </html>
+
 
