@@ -60,14 +60,8 @@
     <div class="card">
       <h2>Empresa</h2>
       <div class="row">
-        <div>
-          <label>RUC</label>
-          <input id="empRuc" placeholder="20123456789">
-        </div>
-        <div>
-          <label>Razón Social</label>
-          <input id="empName" placeholder="Mi Empresa SAC">
-        </div>
+        <div><label>RUC</label><input id="empRuc" placeholder="20123456789"></div>
+        <div><label>Razón Social</label><input id="empName" placeholder="Mi Empresa SAC"></div>
       </div>
       <label>Logo URL (opcional)</label>
       <input id="empLogo" placeholder="https://...">
@@ -77,7 +71,44 @@
       </div>
       <div class="small">Solo manejaremos 1 empresa activa (la principal).</div>
     </div>
-    
+
+    <!-- RÉGIMEN TRIBUTARIO -->
+    <div class="card">
+      <h2>Régimen Tributario</h2>
+      <div class="row">
+        <div>
+          <label>Régimen</label>
+          <select id="taxRegime"></select>
+        </div>
+        <div>
+          <label>Vigente desde</label>
+          <input id="taxValidFrom" type="date">
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnTaxSave">Guardar/Actualizar Régimen</button>
+        <button class="secondary" id="btnTaxReload">Recargar</button>
+      </div>
+      <div class="small" id="taxCurrent"></div>
+
+      <table id="tblTaxHistory">
+        <thead>
+          <tr><th>ID</th><th>Régimen</th><th>Desde</th><th>Hasta</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- SEDES -->
+    <div class="card">
+      <h2>Sedes</h2>
+      <div class="row">
+        <div><label>Código</label><input id="siteCode" placeholder="LIMA"></div>
+        <div><label>Nombre</label><input id="siteName" placeholder="Sede Lima"></div>
+      </div>
+      <div class="actions"><button id="btnSiteAdd">Agregar</button></div>
+      <table id="tblSites"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
 
     <!-- PROYECTOS -->
     <div class="card">
@@ -90,27 +121,9 @@
           <select id="projSite"></select>
         </div>
       </div>
-      <div class="actions">
-        <button id="btnProjAdd">Agregar</button>
-      </div>
+      <div class="actions"><button id="btnProjAdd">Agregar</button></div>
       <table id="tblProjects"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Sede</th><th>Acciones</th></tr></thead><tbody></tbody></table>
     </div>
-
-    
-    <!-- SEDES -->
-    <div class="card">
-      <h2>Sedes</h2>
-      <div class="row">
-        <div><label>Código</label><input id="siteCode" placeholder="LIMA"></div>
-        <div><label>Nombre</label><input id="siteName" placeholder="Sede Lima"></div>
-      </div>
-      <div class="actions">
-        <button id="btnSiteAdd">Agregar</button>
-      </div>
-      <table id="tblSites"><thead><tr><th>ID</th><th>Código</th><th>Nombre</th><th>Acciones</th></tr></thead><tbody></tbody></table>
-    </div>
-
-    
 
     <!-- TURNOS -->
     <div class="card">
@@ -120,9 +133,7 @@
         <div><label>Inicio</label><input id="shiftStart" type="time" value="08:00"></div>
         <div><label>Fin</label><input id="shiftEnd" type="time" value="17:00"></div>
       </div>
-      <div class="actions">
-        <button id="btnShiftAdd">Agregar</button>
-      </div>
+      <div class="actions"><button id="btnShiftAdd">Agregar</button></div>
       <table id="tblShifts"><thead><tr><th>ID</th><th>Nombre</th><th>Inicio</th><th>Fin</th><th>Acciones</th></tr></thead><tbody></tbody></table>
     </div>
 
@@ -130,8 +141,11 @@
 </main>
 
 <script>
-const API_BASE = "https://empleados-api-XXXX.onrender.com"; // <-- CAMBIA ESTO
+const API_BASE = "https://empleados-api-XXXX.onrender.com"; // <-- CAMBIA
 const EMP = `${API_BASE}/api/employer`;
+const TAX_REGIMES = `${API_BASE}/api/regimes/tax`;
+const EMP_TAX = `${API_BASE}/api/employer/tax`;
+const EMP_TAX_HISTORY = `${API_BASE}/api/employer/tax/history`;
 const SITES = `${API_BASE}/api/sites`;
 const PROJECTS = `${API_BASE}/api/projects`;
 const SHIFTS = `${API_BASE}/api/shifts`;
@@ -143,9 +157,9 @@ document.querySelectorAll('.nav a').forEach(a=>{
   if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
 });
 
-// ------------ EMPRESA ------------
-document.getElementById('btnEmpCargar').addEventListener('click', loadEmployer);
-document.getElementById('btnEmpGuardar').addEventListener('click', saveEmployer);
+// -------- Empresa --------
+btnEmpCargar.addEventListener('click', loadEmployer);
+btnEmpGuardar.addEventListener('click', saveEmployer);
 
 async function loadEmployer(){
   clearMsg();
@@ -168,12 +182,61 @@ async function saveEmployer(){
   }catch(e){ showMsg('err',`Error al guardar empresa: ${e.message}`); }
 }
 
-// ------------ SEDES ------------
+// -------- Régimen Tributario --------
+btnTaxReload.addEventListener('click', initTaxBlock);
+btnTaxSave.addEventListener('click', saveEmployerTax);
+
+async function loadTaxRegimes(){
+  const res = await fetch(TAX_REGIMES);
+  const data = res.ok ? await res.json() : [];
+  taxRegime.innerHTML = data.map(r => `<option value="${r.code}">${r.name}</option>`).join('');
+}
+async function loadCurrentTax(){
+  const res = await fetch(EMP_TAX);
+  if(!res.ok) return;
+  const cur = await res.json();
+  taxCurrent.textContent = cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
+  if(cur){ taxRegime.value = cur.code; }
+}
+async function loadTaxHistory(){
+  const tbody = document.querySelector('#tblTaxHistory tbody');
+  tbody.innerHTML = '';
+  const res = await fetch(EMP_TAX_HISTORY);
+  const data = res.ok ? await res.json() : [];
+  data.forEach(h=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${h.id}</td><td>${h.name}</td><td>${h.valid_from}</td><td>${h.valid_to || '—'}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+async function saveEmployerTax(){
+  clearMsg();
+  try{
+    const body = {
+      regime_code: taxRegime.value,
+      valid_from: taxValidFrom.value || new Date().toISOString().slice(0,10)
+    };
+    const res = await fetch(EMP_TAX, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    showMsg('ok', 'Régimen actualizado.');
+    await loadCurrentTax();
+    await loadTaxHistory();
+  }catch(e){ showMsg('err', `Error al actualizar régimen: ${e.message}`); }
+}
+async function initTaxBlock(){
+  taxValidFrom.value = new Date().toISOString().slice(0,10);
+  await loadTaxRegimes();
+  await loadCurrentTax();
+  await loadTaxHistory();
+}
+
+// -------- Sedes --------
 async function reloadSites(){
   const tbody = document.querySelector('#tblSites tbody'); tbody.innerHTML='';
   try{
     const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
+    window._sitesCached = data;
     fillSitesCombo(data);
     data.forEach(s=>{
       const tr=document.createElement('tr');
@@ -193,13 +256,14 @@ function fillSitesCombo(sites){
   const sel = document.getElementById('projSite'); sel.innerHTML='';
   sites.forEach(s=>{ const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.code} — ${s.name}`; sel.appendChild(o); });
 }
-document.getElementById('btnSiteAdd').addEventListener('click', async ()=>{
+btnSiteAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
     const body = { code: siteCode.value.trim(), name: siteName.value.trim() };
     const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    siteCode.value=''; siteName.value=''; showMsg('ok','Sede creada.'); reloadSites();
+    siteCode.value=''; siteName.value='';
+    showMsg('ok','Sede creada.'); reloadSites();
   }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
 });
 async function updateSite(id){
@@ -208,8 +272,7 @@ async function updateSite(id){
     const payload = {}; row.forEach(i=> payload[i.dataset.field]=i.value.trim());
     const res = await fetch(`${SITES}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Sede actualizada.');
-    reloadSites();
+    showMsg('ok','Sede actualizada.'); reloadSites();
   }catch(e){ showMsg('err',`Error al actualizar sede: ${e.message}`); }
 }
 async function deleteSite(id){
@@ -217,12 +280,14 @@ async function deleteSite(id){
   try{
     const res = await fetch(`${SITES}/${id}`, { method:'DELETE' });
     if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Sede eliminada.');
-    reloadSites();
-  }catch(e){ showMsg('err',`Error al eliminar sede: ${e.message}`); }
+    showMsg('ok','Sede eliminada.'); reloadSites();
+  }catch(e){
+    if(e.message.includes('409')) showMsg('err','No se puede eliminar: tiene proyectos asociados');
+    else showMsg('err',`Error al eliminar sede: ${e.message}`);
+  }
 }
 
-// ------------ PROYECTOS ------------
+// -------- Proyectos --------
 async function reloadProjects(){
   const tbody = document.querySelector('#tblProjects tbody'); tbody.innerHTML='';
   try{
@@ -236,7 +301,7 @@ async function reloadProjects(){
         <td><input class="inline-input" value="${p.name}" data-id="${p.id}" data-field="name"></td>
         <td>
           <select class="inline-input" data-id="${p.id}" data-field="site_id">
-            ${window._sitesCached.map(s=>`<option value="${s.id}" ${s.id===p.site_id?'selected':''}>${s.code} — ${s.name}</option>`).join('')}
+            ${ (window._sitesCached||[]).map(s=>`<option value="${s.id}" ${s.id===p.site_id?'selected':''}>${s.code} — ${s.name}</option>`).join('') }
           </select>
         </td>
         <td>
@@ -247,24 +312,25 @@ async function reloadProjects(){
     });
   }catch(e){ showMsg('err',`Error al listar proyectos: ${e.message}`); }
 }
-document.getElementById('btnProjAdd').addEventListener('click', async ()=>{
+btnProjAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
     const body = { code: projCode.value.trim(), name: projName.value.trim(), site_id: Number(projSite.value) || null };
     const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    projCode.value=''; projName.value=''; showMsg('ok','Proyecto creado.');
-    await loadSitesCache(); reloadProjects();
+    projCode.value=''; projName.value='';
+    showMsg('ok','Proyecto creado.');
+    await reloadSites(); // mantiene combo actualizado
+    await reloadProjects();
   }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
 });
 async function updateProject(id){
   try{
     const row = [...document.querySelectorAll('#tblProjects input, #tblProjects select')].filter(i=>+i.dataset.id===id);
-    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.type==='number' ? Number(i.value) : (i.value||null));
+    const payload = {}; row.forEach(i=> payload[i.dataset.field] = i.value);
     const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Proyecto actualizado.');
-    reloadProjects();
+    showMsg('ok','Proyecto actualizado.'); reloadProjects();
   }catch(e){ showMsg('err',`Error al actualizar proyecto: ${e.message}`); }
 }
 async function deleteProject(id){
@@ -272,12 +338,14 @@ async function deleteProject(id){
   try{
     const res = await fetch(`${PROJECTS}/${id}`, { method:'DELETE' });
     if(!res.ok) throw new Error(`${res.status}`);
-    showMsg('ok','Proyecto eliminado.');
-    reloadProjects();
-  }catch(e){ showMsg('err',`Error al eliminar proyecto: ${e.message}`); }
+    showMsg('ok','Proyecto eliminado.'); reloadProjects();
+  }catch(e){
+    if(e.message.includes('409')) showMsg('err','No se puede eliminar: tiene asignaciones/dependencias');
+    else showMsg('err',`Error al eliminar proyecto: ${e.message}`);
+  }
 }
 
-// ------------ TURNOS ------------
+// -------- Turnos --------
 async function reloadShifts(){
   const tbody = document.querySelector('#tblShifts tbody'); tbody.innerHTML='';
   try{
@@ -298,13 +366,14 @@ async function reloadShifts(){
     });
   }catch(e){ showMsg('err',`Error al listar turnos: ${e.message}`); }
 }
-document.getElementById('btnShiftAdd').addEventListener('click', async ()=>{
+btnShiftAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
     const body = { name: shiftName.value.trim(), start_time: shiftStart.value, end_time: shiftEnd.value };
     const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    shiftName.value=''; showMsg('ok','Turno creado.'); reloadShifts();
+    shiftName.value='';
+    showMsg('ok','Turno creado.'); reloadShifts();
   }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
 });
 async function updateShift(id){
@@ -322,26 +391,25 @@ async function deleteShift(id){
     const res = await fetch(`${SHIFTS}/${id}`, { method:'DELETE' });
     if(!res.ok) throw new Error(`${res.status}`);
     showMsg('ok','Turno eliminado.'); reloadShifts();
-  }catch(e){ showMsg('err',`Error al eliminar turno: ${e.message}`); }
+  }catch(e){
+    if(e.message.includes('409')) showMsg('err','No se puede eliminar: está referenciado por asignaciones');
+    else showMsg('err',`Error al eliminar turno: ${e.message}`);
+  }
 }
 
-// --------- helper: cache sites para Projects ---------
-async function loadSitesCache(){
-  const res = await fetch(SITES);
-  window._sitesCached = res.ok ? await res.json() : [];
-  fillSitesCombo(window._sitesCached);
-}
-
-// primera carga
+// -------- init --------
 (async function init(){
   clearMsg();
-  await loadSitesCache();
+  // Empresa
+  try{ await loadEmployer(); }catch{}
+  // Régimen
+  await initTaxBlock();
+  // Catálogos
   await reloadSites();
   await reloadProjects();
   await reloadShifts();
-  // intenta cargar empresa
-  try{ await loadEmployer(); }catch{}
 })();
 </script>
 </body>
 </html>
+
