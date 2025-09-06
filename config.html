@@ -164,6 +164,9 @@
 </div>
 
 <script>
+/* ===== Capturar errores JS globales para mostrarlos en pantalla ===== */
+window.addEventListener('error', (e)=>{ try{ showMsg('err', `JS Error: ${e.message}`);}catch{} });
+
 /* ========== CONFIG ========== */
 const API_BASE = "https://empleados-api-o6yy.onrender.com"; // ⚠️ ajusta si es distinto
 const EMP = `${API_BASE}/api/employer`;
@@ -178,9 +181,10 @@ const SHIFTS = `${API_BASE}/api/shifts`;
 function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function clearMsg(){ const box=document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
 
-/* destacar link activo */
+/* destacar link activo (GitHub Pages) */
 document.querySelectorAll('.nav a').forEach(a=>{
-  if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
+  const href=a.getAttribute('href'); if(!href) return;
+  if (location.pathname.endsWith(href)) a.classList.add('active');
 });
 
 /* ========== Empresa ========== */
@@ -449,6 +453,7 @@ document.getElementById('btnShiftsView').addEventListener('click', openShiftsMod
 </script>
 </body>
 </html>
+
 
 
 
