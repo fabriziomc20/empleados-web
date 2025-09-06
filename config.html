@@ -121,7 +121,6 @@
         <div><label>Nombre del Proyecto</label><input id="projName" placeholder="Proyecto General Lima"></div>
         <div>
           <label>Sede</label>
-          <select id="projSite"></select>
         </div>
         <div class="small">El código interno se genera automáticamente.</div>
       </div>
@@ -274,19 +273,32 @@ btnSiteAdd.addEventListener('click', async ()=>{
   }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
 });
 
-/* ========== Proyectos (sin código manual) ========== */
+/* ========== Proyectos (sin sede) ========== */
 btnProjAdd.addEventListener('click', async ()=>{
   clearMsg();
   try{
-    const body = { name: projName.value.trim(), site_id: Number(projSite.value) || null };
-    if(!body.name || !body.site_id) throw new Error("Completa nombre y sede");
-    const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    const body = { name: projName.value.trim() };
+    if(!body.name) throw new Error("Completa el nombre del proyecto");
+
+    const res = await fetch(PROJECTS, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if(!res.ok){
+      const t = await res.text();
+      throw new Error(`${res.status} ${t}`);
+    }
+
     projName.value='';
     showMsg('ok','Proyecto creado.');
     await reloadProjects();
-  }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
+  }catch(e){
+    showMsg('err',`Error al crear proyecto: ${e.message}`);
+  }
 });
+
 
 /* ========== Turnos ========== */
 btnShiftAdd.addEventListener('click', async ()=>{
