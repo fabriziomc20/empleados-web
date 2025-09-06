@@ -114,16 +114,13 @@
       </div>
     </div>
 
-    <!-- PROYECTOS -->
+    <!-- PROYECTOS (sin sede) -->
     <div class="card">
       <h2>Proyectos</h2>
-      <div class="row3">
+      <div class="row">
         <div><label>Nombre del Proyecto</label><input id="projName" placeholder="Proyecto General Lima"></div>
-        <div>
-          <label>Sede</label>
-        </div>
-        <div class="small">El código interno se genera automáticamente.</div>
       </div>
+      <div class="small">El código interno se genera automáticamente.</div>
       <div class="actions">
         <button id="btnProjAdd">Agregar</button>
         <button class="secondary" id="btnProjectsView">Ver todo</button>
@@ -168,7 +165,7 @@
 
 <script>
 /* ========== CONFIG ========== */
-const API_BASE = "https://empleados-api-o6yy.onrender.com"; // ⚠️ CAMBIA a tu URL si difiere
+const API_BASE = "https://empleados-api-o6yy.onrender.com"; // ⚠️ ajusta si es distinto
 const EMP = `${API_BASE}/api/employer`;
 const TAX_REGIMES = `${API_BASE}/api/regimes/tax`;
 const EMP_TAX = `${API_BASE}/api/employer/tax`;
@@ -269,7 +266,7 @@ btnSiteAdd.addEventListener('click', async ()=>{
     if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
     siteName.value='';
     showMsg('ok','Sede creada.');
-    await reloadSites(); // refresca combo de proyectos
+    await reloadSites();
   }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
 });
 
@@ -299,7 +296,6 @@ btnProjAdd.addEventListener('click', async ()=>{
   }
 });
 
-
 /* ========== Turnos ========== */
 btnShiftAdd.addEventListener('click', async ()=>{
   clearMsg();
@@ -313,21 +309,15 @@ btnShiftAdd.addEventListener('click', async ()=>{
   }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
 });
 
-/* ========== Carga de combos/listas mínimas ========== */
+/* ========== Carga de listas mínimas ========== */
 async function reloadSites(){
   try{
     const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
     const data = await res.json();
     window._sitesCached = data || [];
-    // llenar combo de Proyectos
-    const sel = document.getElementById('projSite'); sel.innerHTML='';
-    (window._sitesCached||[]).forEach(s=>{
-      const o=document.createElement('option'); o.value=s.id; o.textContent=`${s.name}`; sel.appendChild(o);
-    });
   }catch(e){ showMsg('err',`Error al listar sedes: ${e.message}`); }
 }
 async function reloadProjects(){
-  // solo para tener el modal actualizado cuando se abra
   try{ const r = await fetch(PROJECTS); window._projectsCached = r.ok? await r.json() : []; }catch{}
 }
 async function reloadShifts(){
@@ -390,7 +380,7 @@ async function modalEdit(kind, id){
     const row = (window._projectsCached||[]).find(x=>x.id===id);
     const nuevo = prompt("Nuevo nombre de proyecto:", row?.name || "");
     if(nuevo===null) return;
-    const payload = { name: nuevo, site_id: row?.site_id || null };
+    const payload = { name: nuevo };
     const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
     if(res.ok){ await reloadProjects(); await openProjectsModal(); }
   }else if(kind==="shifts"){
@@ -431,7 +421,6 @@ async function openProjectsModal(){
     { header:"ID", field:"id" },
     { header:"Código", field:"code" },
     { header:"Nombre", field:"name" },
-    { header:"Sede", field:"site_name" },
   ], "projects");
 }
 async function openShiftsModal(){
@@ -460,5 +449,6 @@ document.getElementById('btnShiftsView').addEventListener('click', openShiftsMod
 </script>
 </body>
 </html>
+
 
 
