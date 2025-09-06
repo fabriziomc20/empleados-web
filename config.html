@@ -164,11 +164,27 @@
 </div>
 
 <script>
-/* ===== Capturar errores JS globales para mostrarlos en pantalla ===== */
-window.addEventListener('error', (e)=>{ try{ showMsg('err', `JS Error: ${e.message}`);}catch{} });
+// ===== Helpers UI (primero para que existan si algo falla) =====
+function showMsg(type, text){
+  const box = document.getElementById('msg');
+  if(!box) return;
+  box.className = type === 'ok' ? 'ok' : 'err';
+  box.textContent = text;
+  box.style.display = 'block';
+}
+function clearMsg(){
+  const box = document.getElementById('msg');
+  if(!box) return;
+  box.style.display = 'none';
+  box.textContent = '';
+  box.className = '';
+}
 
-/* ========== CONFIG ========== */
-const API_BASE = "https://empleados-api-o6yy.onrender.com"; // ⚠️ ajusta si es distinto
+// Captura de errores JS visibles en pantalla
+window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
+
+// ===== CONFIG API =====
+const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const EMP = `${API_BASE}/api/employer`;
 const TAX_REGIMES = `${API_BASE}/api/regimes/tax`;
 const EMP_TAX = `${API_BASE}/api/employer/tax`;
@@ -177,57 +193,51 @@ const SITES = `${API_BASE}/api/sites`;
 const PROJECTS = `${API_BASE}/api/projects`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
-/* ========== UI helpers ========== */
-function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
-function clearMsg(){ const box=document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
-
-/* destacar link activo (GitHub Pages) */
-document.querySelectorAll('.nav a').forEach(a=>{
-  const href=a.getAttribute('href'); if(!href) return;
-  if (location.pathname.endsWith(href)) a.classList.add('active');
-});
-
-/* ========== Empresa ========== */
-btnEmpCargar.addEventListener('click', loadEmployer);
-btnEmpGuardar.addEventListener('click', saveEmployer);
-
+// ===== Funciones de datos (NO asumen variables globales de elementos) =====
 async function loadEmployer(){
   clearMsg();
-  try{
-    const res = await fetch(EMP);
-    if(!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    if(!data){ showMsg('ok','No hay empresa registrada aún.'); return; }
-    empRuc.value = data.ruc||''; empName.value=data.name||''; empLogo.value=data.logo_url||'';
-    showMsg('ok','Empresa cargada.');
-  }catch(e){ showMsg('err',`Error al cargar empresa: ${e.message}`); }
-}
-async function saveEmployer(){
-  clearMsg();
-  try{
-    const body = { ruc: empRuc.value.trim(), name: empName.value.trim(), logo_url: empLogo.value.trim()||null };
-    const res = await fetch(EMP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    showMsg('ok','Empresa guardada/actualizada.');
-  }catch(e){ showMsg('err',`Error al guardar empresa: ${e.message}`); }
+  const res = await fetch(EMP);
+  if(!res.ok) throw new Error(`${res.status}`);
+  const data = await res.json();
+  const empRuc = document.getElementById('empRuc');
+  const empName = document.getElementById('empName');
+  const empLogo = document.getElementById('empLogo');
+  if(!data){ showMsg('ok','No hay empresa registrada aún.'); return; }
+  if(empRuc) empRuc.value = data.ruc || '';
+  if(empName) empName.value = data.name || '';
+  if(empLogo) empLogo.value = data.logo_url || '';
+  showMsg('ok','Empresa cargada.');
 }
 
-/* ========== Régimen Tributario ========== */
-btnTaxReload.addEventListener('click', initTaxBlock);
-btnTaxSave.addEventListener('click', saveEmployerTax);
-document.getElementById('btnTaxHistory').addEventListener('click', openTaxHistoryModal);
+async function saveEmployer(){
+  clearMsg();
+  const empRuc = document.getElementById('empRuc');
+  const empName = document.getElementById('empName');
+  const empLogo = document.getElementById('empLogo');
+  const body = {
+    ruc: empRuc?.value.trim(),
+    name: empName?.value.trim(),
+    logo_url: (empLogo?.value.trim() || null)
+  };
+  const res = await fetch(EMP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+  showMsg('ok','Empresa guardada/actualizada.');
+}
 
 async function loadTaxRegimes(){
   const res = await fetch(TAX_REGIMES);
   const data = res.ok ? await res.json() : [];
-  taxRegime.innerHTML = data.map(r => `<option value="${r.code}">${r.name}</option>`).join('');
+  const taxRegime = document.getElementById('taxRegime');
+  if(taxRegime) taxRegime.innerHTML = data.map(r => `<option value="${r.code}">${r.name}</option>`).join('');
 }
 async function loadCurrentTax(){
   const res = await fetch(EMP_TAX);
   if(!res.ok) return;
   const cur = await res.json();
-  taxCurrent.textContent = cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
-  if(cur){ taxRegime.value = cur.code; }
+  const taxCurrent = document.getElementById('taxCurrent');
+  const taxRegime = document.getElementById('taxRegime');
+  if(taxCurrent) taxCurrent.textContent = cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
+  if(cur && taxRegime){ taxRegime.value = cur.code; }
 }
 async function loadTaxHistory(){
   const res = await fetch(EMP_TAX_HISTORY);
@@ -235,91 +245,22 @@ async function loadTaxHistory(){
 }
 async function saveEmployerTax(){
   clearMsg();
-  try{
-    const body = {
-      regime_code: taxRegime.value,
-      valid_from: taxValidFrom.value || new Date().toISOString().slice(0,10)
-    };
-    const res = await fetch(EMP_TAX, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    showMsg('ok', 'Régimen actualizado.');
-    await loadCurrentTax();
-  }catch(e){ showMsg('err', `Error al actualizar régimen: ${e.message}`); }
-}
-async function initTaxBlock(){
-  taxValidFrom.value = new Date().toISOString().slice(0,10);
-  await loadTaxRegimes();
+  const taxRegime = document.getElementById('taxRegime');
+  const taxValidFrom = document.getElementById('taxValidFrom');
+  const body = {
+    regime_code: taxRegime?.value,
+    valid_from: (taxValidFrom?.value || new Date().toISOString().slice(0,10))
+  };
+  const res = await fetch(EMP_TAX, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+  showMsg('ok', 'Régimen actualizado.');
   await loadCurrentTax();
 }
-async function openTaxHistoryModal(){
-  const data = await loadTaxHistory();
-  openModal("Histórico de Régimen Tributario", data, [
-    { header:"ID", field:"id" },
-    { header:"Régimen", field:"name" },
-    { header:"Desde", field:"valid_from" },
-    { header:"Hasta", field:"valid_to" },
-  ], "tax");
-}
 
-/* ========== Sedes (sin código manual) ========== */
-btnSiteAdd.addEventListener('click', async ()=>{
-  clearMsg();
-  try{
-    const body = { name: siteName.value.trim() };
-    const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    siteName.value='';
-    showMsg('ok','Sede creada.');
-    await reloadSites();
-  }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
-});
-
-/* ========== Proyectos (sin sede) ========== */
-btnProjAdd.addEventListener('click', async ()=>{
-  clearMsg();
-  try{
-    const body = { name: projName.value.trim() };
-    if(!body.name) throw new Error("Completa el nombre del proyecto");
-
-    const res = await fetch(PROJECTS, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if(!res.ok){
-      const t = await res.text();
-      throw new Error(`${res.status} ${t}`);
-    }
-
-    projName.value='';
-    showMsg('ok','Proyecto creado.');
-    await reloadProjects();
-  }catch(e){
-    showMsg('err',`Error al crear proyecto: ${e.message}`);
-  }
-});
-
-/* ========== Turnos ========== */
-btnShiftAdd.addEventListener('click', async ()=>{
-  clearMsg();
-  try{
-    const body = { name: shiftName.value.trim(), start_time: shiftStart.value, end_time: shiftEnd.value };
-    const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-    if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-    shiftName.value='';
-    showMsg('ok','Turno creado.');
-    await reloadShifts();
-  }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
-});
-
-/* ========== Carga de listas mínimas ========== */
 async function reloadSites(){
-  try{
-    const res = await fetch(SITES); if(!res.ok) throw new Error(`${res.status}`);
-    const data = await res.json();
-    window._sitesCached = data || [];
-  }catch(e){ showMsg('err',`Error al listar sedes: ${e.message}`); }
+  const res = await fetch(SITES);
+  if(!res.ok) throw new Error(`${res.status}`);
+  window._sitesCached = await res.json();
 }
 async function reloadProjects(){
   try{ const r = await fetch(PROJECTS); window._projectsCached = r.ok? await r.json() : []; }catch{}
@@ -328,20 +269,28 @@ async function reloadShifts(){
   try{ const r = await fetch(SHIFTS); window._shiftsCached = r.ok? await r.json() : []; }catch{}
 }
 
-/* ========== Modal genérico ========== */
+// ===== Modal genérico =====
 let modalState = { items:[], page:1, perPage:10, kind:"", columns:[] };
 
 function openModal(title, items, columns, kind){
   modalState = { items, page:1, perPage:10, kind, columns };
-  document.getElementById('modalTitle').textContent = title;
-  document.getElementById('modalSearch').value = "";
+  const titleEl = document.getElementById('modalTitle');
+  const searchEl = document.getElementById('modalSearch');
+  const wrap = document.getElementById('modalWrap');
+  if(titleEl) titleEl.textContent = title;
+  if(searchEl) searchEl.value = "";
   renderModal();
-  document.getElementById('modalWrap').style.display = "flex";
+  if(wrap) wrap.style.display = "flex";
 }
-function closeModal(){ document.getElementById('modalWrap').style.display = "none"; }
+function closeModal(){
+  const wrap = document.getElementById('modalWrap');
+  if(wrap) wrap.style.display = "none";
+}
+window.closeModal = closeModal; // para el botón "Cerrar"
 
 function renderModal(){
-  const q = document.getElementById('modalSearch').value.trim().toLowerCase();
+  const searchEl = document.getElementById('modalSearch');
+  const q = (searchEl?.value || "").trim().toLowerCase();
   const filtered = modalState.items.filter(it => JSON.stringify(it).toLowerCase().includes(q));
   const total = filtered.length;
   const maxPage = Math.max(1, Math.ceil(total / modalState.perPage));
@@ -363,15 +312,24 @@ function renderModal(){
           </td>
         </tr>`).join("")}
     </tbody>`;
-  const content = document.getElementById('modalContent');
-  content.innerHTML = "";
-  content.appendChild(tbl);
 
-  document.getElementById('modalPageInfo').textContent = `Página ${modalState.page} / ${maxPage} — ${total} registros`;
-  document.getElementById('modalPrev').onclick = () => { if(modalState.page>1){ modalState.page--; renderModal(); } };
-  document.getElementById('modalNext').onclick = () => { if(modalState.page<maxPage){ modalState.page++; renderModal(); } };
+  const content = document.getElementById('modalContent');
+  if(content){
+    content.innerHTML = "";
+    content.appendChild(tbl);
+  }
+
+  const info = document.getElementById('modalPageInfo');
+  if(info) info.textContent = `Página ${modalState.page} / ${maxPage} — ${total} registros`;
+
+  const prev = document.getElementById('modalPrev');
+  const next = document.getElementById('modalNext');
+  if(prev) prev.onclick = () => { if(modalState.page>1){ modalState.page--; renderModal(); } };
+  if(next) next.onclick = () => { if(modalState.page<maxPage){ modalState.page++; renderModal(); } };
 }
-document.getElementById('modalSearch').addEventListener('input', renderModal);
+document.addEventListener('input', (ev)=>{
+  if(ev.target && ev.target.id === 'modalSearch') renderModal();
+});
 
 async function modalEdit(kind, id){
   if(kind==="sites"){
@@ -395,6 +353,8 @@ async function modalEdit(kind, id){
     if(res.ok){ await reloadShifts(); await openShiftsModal(); }
   }
 }
+window.modalEdit = modalEdit;
+
 async function modalDelete(kind, id){
   if(!confirm("¿Eliminar?")) return;
   let url="";
@@ -407,8 +367,8 @@ async function modalDelete(kind, id){
   if(kind==="projects"){ await reloadProjects(); await openProjectsModal(); }
   if(kind==="shifts"){ await reloadShifts(); await openShiftsModal(); }
 }
+window.modalDelete = modalDelete;
 
-/* Botones Ver todo */
 async function openSitesModal(){
   const res = await fetch(SITES); const data = res.ok ? await res.json() : [];
   window._sitesCached = data;
@@ -437,19 +397,95 @@ async function openShiftsModal(){
     { header:"Fin", field:"end_time" },
   ], "shifts");
 }
-document.getElementById('btnSitesView').addEventListener('click', openSitesModal);
-document.getElementById('btnProjectsView').addEventListener('click', openProjectsModal);
-document.getElementById('btnShiftsView').addEventListener('click', openShiftsModal);
+window.openSitesModal = openSitesModal;
+window.openProjectsModal = openProjectsModal;
+window.openShiftsModal = openShiftsModal;
 
-/* ========== init ========== */
-(async function init(){
-  clearMsg();
+// ===== Arranque cuando el DOM está listo =====
+window.addEventListener('DOMContentLoaded', async () => {
+  // activar link activo en sidebar
+  document.querySelectorAll('.nav a').forEach(a=>{
+    const href=a.getAttribute('href'); if(!href) return;
+    if (location.pathname.endsWith(href)) a.classList.add('active');
+  });
+
+  // enganchar botones de la UI de forma segura
+  const btnEmpCargar    = document.getElementById('btnEmpCargar');
+  const btnEmpGuardar   = document.getElementById('btnEmpGuardar');
+  const btnTaxReload    = document.getElementById('btnTaxReload');
+  const btnTaxSave      = document.getElementById('btnTaxSave');
+  const btnTaxHistory   = document.getElementById('btnTaxHistory');
+  const btnSiteAdd      = document.getElementById('btnSiteAdd');
+  const btnSitesView    = document.getElementById('btnSitesView');
+  const btnProjAdd      = document.getElementById('btnProjAdd');
+  const btnProjectsView = document.getElementById('btnProjectsView');
+  const btnShiftAdd     = document.getElementById('btnShiftAdd');
+  const btnShiftsView   = document.getElementById('btnShiftsView');
+
+  btnEmpCargar   && btnEmpCargar.addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
+  btnEmpGuardar  && btnEmpGuardar.addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
+  btnTaxReload   && btnTaxReload.addEventListener('click', ()=> initTaxBlock().catch(e=>showMsg('err', e.message)));
+  btnTaxSave     && btnTaxSave.addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
+  btnTaxHistory  && btnTaxHistory.addEventListener('click', ()=> openTaxHistoryModal());
+
+  btnSiteAdd     && btnSiteAdd.addEventListener('click', async ()=>{
+    try{
+      clearMsg();
+      const siteName = document.getElementById('siteName');
+      const body = { name: siteName?.value.trim() };
+      const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      if(siteName) siteName.value='';
+      showMsg('ok','Sede creada.');
+      await reloadSites();
+    }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
+  });
+  btnSitesView   && btnSitesView.addEventListener('click', ()=> openSitesModal());
+
+  btnProjAdd     && btnProjAdd.addEventListener('click', async ()=>{
+    try{
+      clearMsg();
+      const projName = document.getElementById('projName');
+      const name = projName?.value.trim();
+      if(!name) throw new Error("Completa el nombre del proyecto");
+      const res = await fetch(PROJECTS, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name })
+      });
+      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      if(projName) projName.value='';
+      showMsg('ok','Proyecto creado.');
+      await reloadProjects();
+    }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
+  });
+  btnProjectsView && btnProjectsView.addEventListener('click', ()=> openProjectsModal());
+
+  btnShiftAdd    && btnShiftAdd.addEventListener('click', async ()=>{
+    try{
+      clearMsg();
+      const name  = document.getElementById('shiftName')?.value.trim();
+      const start = document.getElementById('shiftStart')?.value;
+      const end   = document.getElementById('shiftEnd')?.value;
+      const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, start_time:start, end_time:end }) });
+      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      const shiftName = document.getElementById('shiftName'); if(shiftName) shiftName.value='';
+      showMsg('ok','Turno creado.');
+      await reloadShifts();
+    }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
+  });
+  btnShiftsView  && btnShiftsView.addEventListener('click', ()=> openShiftsModal());
+
+  // init bloques
   try{ await loadEmployer(); }catch{}
-  await initTaxBlock();
+  try{
+    const taxValidFrom = document.getElementById('taxValidFrom');
+    if(taxValidFrom) taxValidFrom.value = new Date().toISOString().slice(0,10);
+    await loadTaxRegimes();
+    await loadCurrentTax();
+  }catch(e){ showMsg('err', e.message); }
   await reloadSites();
   await reloadProjects();
   await reloadShifts();
-})();
+});
 </script>
 </body>
 </html>
