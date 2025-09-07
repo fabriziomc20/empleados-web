@@ -164,7 +164,7 @@
 </div>
 
 <script>
-// ===== Helpers UI (primero para que existan si algo falla) =====
+// ===== Helpers UI =====
 function showMsg(type, text){
   const box = document.getElementById('msg');
   if(!box) return;
@@ -179,8 +179,7 @@ function clearMsg(){
   box.textContent = '';
   box.className = '';
 }
-
-// Captura de errores JS visibles en pantalla
+// Mostrar errores JS arriba
 window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
 
 // ===== CONFIG API =====
@@ -193,7 +192,7 @@ const SITES = `${API_BASE}/api/sites`;
 const PROJECTS = `${API_BASE}/api/projects`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
-// ===== Funciones de datos (NO asumen variables globales de elementos) =====
+// ===== Data funcs =====
 async function loadEmployer(){
   clearMsg();
   const res = await fetch(EMP);
@@ -208,7 +207,6 @@ async function loadEmployer(){
   if(empLogo) empLogo.value = data.logo_url || '';
   showMsg('ok','Empresa cargada.');
 }
-
 async function saveEmployer(){
   clearMsg();
   const empRuc = document.getElementById('empRuc');
@@ -257,21 +255,13 @@ async function saveEmployerTax(){
   await loadCurrentTax();
 }
 
-async function reloadSites(){
-  const res = await fetch(SITES);
-  if(!res.ok) throw new Error(`${res.status}`);
-  window._sitesCached = await res.json();
-}
-async function reloadProjects(){
-  try{ const r = await fetch(PROJECTS); window._projectsCached = r.ok? await r.json() : []; }catch{}
-}
-async function reloadShifts(){
-  try{ const r = await fetch(SHIFTS); window._shiftsCached = r.ok? await r.json() : []; }catch{}
-}
+// ===== List reloads =====
+async function reloadSites(){ const r=await fetch(SITES); if(!r.ok) throw new Error(`${r.status}`); window._sitesCached=await r.json(); }
+async function reloadProjects(){ try{ const r=await fetch(PROJECTS); window._projectsCached=r.ok?await r.json():[] }catch{} }
+async function reloadShifts(){ try{ const r=await fetch(SHIFTS); window._shiftsCached=r.ok?await r.json():[] }catch{} }
 
 // ===== Modal genérico =====
 let modalState = { items:[], page:1, perPage:10, kind:"", columns:[] };
-
 function openModal(title, items, columns, kind){
   modalState = { items, page:1, perPage:10, kind, columns };
   const titleEl = document.getElementById('modalTitle');
@@ -282,11 +272,8 @@ function openModal(title, items, columns, kind){
   renderModal();
   if(wrap) wrap.style.display = "flex";
 }
-function closeModal(){
-  const wrap = document.getElementById('modalWrap');
-  if(wrap) wrap.style.display = "none";
-}
-window.closeModal = closeModal; // para el botón "Cerrar"
+function closeModal(){ const wrap=document.getElementById('modalWrap'); if(wrap) wrap.style.display="none"; }
+window.closeModal = closeModal;
 
 function renderModal(){
   const searchEl = document.getElementById('modalSearch');
@@ -312,12 +299,8 @@ function renderModal(){
           </td>
         </tr>`).join("")}
     </tbody>`;
-
   const content = document.getElementById('modalContent');
-  if(content){
-    content.innerHTML = "";
-    content.appendChild(tbl);
-  }
+  if(content){ content.innerHTML = ""; content.appendChild(tbl); }
 
   const info = document.getElementById('modalPageInfo');
   if(info) info.textContent = `Página ${modalState.page} / ${maxPage} — ${total} registros`;
@@ -401,83 +384,80 @@ window.openSitesModal = openSitesModal;
 window.openProjectsModal = openProjectsModal;
 window.openShiftsModal = openShiftsModal;
 
-// ===== Arranque cuando el DOM está listo =====
+// ===== Historial de régimen (definida en global) =====
+window.openTaxHistoryModal = async function openTaxHistoryModal(){
+  try{
+    const data = await loadTaxHistory();
+    openModal("Histórico de Régimen Tributario", data, [
+      { header:"ID", field:"id" },
+      { header:"Régimen", field:"name" },
+      { header:"Desde", field:"valid_from" },
+      { header:"Hasta", field:"valid_to" },
+    ], "tax");
+  }catch(e){
+    showMsg('err',`Error cargando historial: ${e.message}`);
+  }
+};
+
+// ===== Init DOM =====
 window.addEventListener('DOMContentLoaded', async () => {
-  // activar link activo en sidebar
+  // activar link activo
   document.querySelectorAll('.nav a').forEach(a=>{
     const href=a.getAttribute('href'); if(!href) return;
     if (location.pathname.endsWith(href)) a.classList.add('active');
   });
 
-  // enganchar botones de la UI de forma segura
-  const btnEmpCargar    = document.getElementById('btnEmpCargar');
-  const btnEmpGuardar   = document.getElementById('btnEmpGuardar');
-  const btnTaxReload    = document.getElementById('btnTaxReload');
-  const btnTaxSave      = document.getElementById('btnTaxSave');
-  const btnTaxHistory   = document.getElementById('btnTaxHistory');
-  const btnSiteAdd      = document.getElementById('btnSiteAdd');
-  const btnSitesView    = document.getElementById('btnSitesView');
-  const btnProjAdd      = document.getElementById('btnProjAdd');
-  const btnProjectsView = document.getElementById('btnProjectsView');
-  const btnShiftAdd     = document.getElementById('btnShiftAdd');
-  const btnShiftsView   = document.getElementById('btnShiftsView');
+  // botones
+  const $ = (id)=>document.getElementById(id);
+  $('btnEmpCargar')   && $('btnEmpCargar').addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
+  $('btnEmpGuardar')  && $('btnEmpGuardar').addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
+  $('btnTaxReload')   && $('btnTaxReload').addEventListener('click', ()=> Promise.resolve().then(loadTaxRegimes).then(loadCurrentTax).catch(e=>showMsg('err', e.message)));
+  $('btnTaxSave')     && $('btnTaxSave').addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
+  $('btnTaxHistory')  && $('btnTaxHistory').addEventListener('click', ()=> window.openTaxHistoryModal());
 
-  btnEmpCargar   && btnEmpCargar.addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
-  btnEmpGuardar  && btnEmpGuardar.addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
-  btnTaxReload   && btnTaxReload.addEventListener('click', ()=> initTaxBlock().catch(e=>showMsg('err', e.message)));
-  btnTaxSave     && btnTaxSave.addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
-  btnTaxHistory  && btnTaxHistory.addEventListener('click', ()=> openTaxHistoryModal());
-
-  btnSiteAdd     && btnSiteAdd.addEventListener('click', async ()=>{
+  $('btnSiteAdd')     && $('btnSiteAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const siteName = document.getElementById('siteName');
-      const body = { name: siteName?.value.trim() };
-      const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const name = $('siteName')?.value.trim();
+      const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
       if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-      if(siteName) siteName.value='';
-      showMsg('ok','Sede creada.');
-      await reloadSites();
+      if($('siteName')) $('siteName').value='';
+      showMsg('ok','Sede creada.'); await reloadSites();
     }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
   });
-  btnSitesView   && btnSitesView.addEventListener('click', ()=> openSitesModal());
+  $('btnSitesView')   && $('btnSitesView').addEventListener('click', ()=> openSitesModal());
 
-  btnProjAdd     && btnProjAdd.addEventListener('click', async ()=>{
+  $('btnProjAdd')     && $('btnProjAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const projName = document.getElementById('projName');
-      const name = projName?.value.trim();
+      const name = $('projName')?.value.trim();
       if(!name) throw new Error("Completa el nombre del proyecto");
-      const res = await fetch(PROJECTS, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name })
-      });
+      const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
       if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-      if(projName) projName.value='';
-      showMsg('ok','Proyecto creado.');
-      await reloadProjects();
+      if($('projName')) $('projName').value='';
+      showMsg('ok','Proyecto creado.'); await reloadProjects();
     }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
   });
-  btnProjectsView && btnProjectsView.addEventListener('click', ()=> openProjectsModal());
+  $('btnProjectsView')&& $('btnProjectsView').addEventListener('click', ()=> openProjectsModal());
 
-  btnShiftAdd    && btnShiftAdd.addEventListener('click', async ()=>{
+  $('btnShiftAdd')    && $('btnShiftAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const name  = document.getElementById('shiftName')?.value.trim();
-      const start = document.getElementById('shiftStart')?.value;
-      const end   = document.getElementById('shiftEnd')?.value;
+      const name  = $('shiftName')?.value.trim();
+      const start = $('shiftStart')?.value;
+      const end   = $('shiftEnd')?.value;
       const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, start_time:start, end_time:end }) });
       if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
-      const shiftName = document.getElementById('shiftName'); if(shiftName) shiftName.value='';
-      showMsg('ok','Turno creado.');
-      await reloadShifts();
+      if($('shiftName')) $('shiftName').value='';
+      showMsg('ok','Turno creado.'); await reloadShifts();
     }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
   });
-  btnShiftsView  && btnShiftsView.addEventListener('click', ()=> openShiftsModal());
+  $('btnShiftsView')  && $('btnShiftsView').addEventListener('click', ()=> openShiftsModal());
 
-  // init bloques
+  // init
   try{ await loadEmployer(); }catch{}
   try{
-    const taxValidFrom = document.getElementById('taxValidFrom');
+    const taxValidFrom = $('taxValidFrom');
     if(taxValidFrom) taxValidFrom.value = new Date().toISOString().slice(0,10);
     await loadTaxRegimes();
     await loadCurrentTax();
