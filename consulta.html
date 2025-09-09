@@ -4,45 +4,19 @@
 <meta charset="utf-8" />
 <title>Reclutamiento – Consulta</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<style>
-  :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#94a3b8;--brand:#2563eb;}
-  *{box-sizing:border-box} body{margin:0;display:flex;background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial}
-  /* Sidebar */
-  .sidebar{width:260px;background:#0b1220;min-height:100vh;padding:18px;position:sticky;top:0}
-  .logo{font-weight:700;margin-bottom:14px}
-  .nav a{display:block;padding:10px 12px;border-radius:10px;color:var(--text);text-decoration:none;margin:6px 0}
-  .nav a.active{background:var(--brand)}
-  .nav a:hover{background:#1f2937}
-  /* Main */
-  .main{flex:1;padding:20px}
-  .card{background:var(--panel);padding:18px;border-radius:14px;max-width:1200px}
-  h1{margin:6px 0 14px}
-  .filters{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0}
-  .box{background:#0b1220;border:1px solid #334155;border-radius:12px;padding:12px}
-  label{font-size:13px;color:var(--muted);margin-right:6px}
-  select,input[type="number"]{padding:8px;border-radius:10px;border:1px solid #334155;background:#0b1220;color:var(--text)}
-  button{background:var(--brand);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer}
-  button.secondary{background:#374151}
-  table{width:100%;border-collapse:collapse;margin-top:14px}
-  th,td{border:1px solid #374151;padding:8px;text-align:center;font-size:14px}
-  th{background:#1f2937}
-  a{color:#60a5fa;text-decoration:none}
-  a:hover{text-decoration:underline}
-  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
-  .tag.rev{background:#1e293b;color:#e2e8f0}
-  .tag.apr{background:#14532d;color:#dcfce7}
-  .tag.can{background:#7f1d1d;color:#fee2e2}
-  #msg{display:none;margin:12px 0;padding:10px;border-radius:10px}
-  .ok{background:#065f46;color:#ecfdf5}
-  .err{background:#7f1d1d;color:#fee2e2}
-</style>
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+<header class="topbar">
+  <button id="menuBtn" class="menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Menú">☰</button>
+  <div class="logo-sm">RR.HH. Suite</div>
+</header>
 
 <!-- Sidebar -->
-<aside class="sidebar">
+<aside id="sidebar" class="sidebar">
   <div class="logo">RR.HH. Suite</div>
-  <nav class="nav">
+  <nav class="nav" aria-label="Navegación principal">
     <div style="font-size:12px;opacity:.7;margin:8px 0">Reclutamiento</div>
     <a href="formularioweb.html">Formulario</a>
     <a href="consulta.html" class="active">Consulta</a>
@@ -52,11 +26,13 @@
     <a href="nomina.html">Nómina</a>
     <div class="sep"></div>
     <div class="caption">Usuario / Configuración</div>
-    <a href="config.html" class="active">Parámetros de Empresa</a>
+    <a href="config.html">Parámetros de Empresa</a>
   </nav>
 </aside>
 
-<main class="main">
+<div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
+
+<main id="main" class="main" tabindex="-1">
   <div class="card">
     <h1>Consulta de Candidatos</h1>
 
@@ -148,7 +124,11 @@ function showMsg(type, text){
 function clearMsg(){ const box = document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
 
 document.querySelectorAll('.nav a').forEach(a=>{
-  if (a.getAttribute('href') && location.pathname.endsWith(a.getAttribute('href'))) a.classList.add('active');
+  const href=a.getAttribute('href');
+  if (href && location.pathname.endsWith(href)){
+    a.classList.add('active');
+    a.setAttribute('aria-current','page');
+  }
 });
 
 document.getElementById("btnConsultar").addEventListener("click", consultar);
@@ -270,6 +250,22 @@ async function aprobar(id){
 
 // primera carga
 consultar();
+</script>
+<script>
+function closeMenu(){
+  document.body.classList.remove('menu-open');
+  document.getElementById('menuBtn').setAttribute('aria-expanded','false');
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const btn=document.getElementById('menuBtn');
+  const backdrop=document.getElementById('backdrop');
+  btn?.addEventListener('click',()=>{
+    const open=document.body.classList.toggle('menu-open');
+    btn.setAttribute('aria-expanded',open);
+  });
+  backdrop?.addEventListener('click',closeMenu);
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+});
 </script>
 </body>
 </html>
