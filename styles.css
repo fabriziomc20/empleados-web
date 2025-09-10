@@ -35,7 +35,15 @@ body{
 .nav a.active{background:var(--brand);color:#fff;}
 .nav a:hover{background:#e5e7eb;}
 .sep{height:1px;background:#e5e7eb;margin:12px 0;}
-.caption{font-size:12px;opacity:.7;margin:8px 0;}
+/* ── Títulos de sección del sidebar (mejor jerarquía) ── */
+.caption{
+  font-size:13px;
+  font-weight:600;
+  text-transform:uppercase;
+  color:#374151;           /* más contraste */
+  letter-spacing:.4px;     /* mejor legibilidad */
+  margin:18px 0 10px;      /* más separación de grupos */
+}
 .main{flex:1;padding:20px;}
 .card{
   background:var(--panel);
@@ -80,6 +88,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .ok{background:#dcfce7;color:#166534;}
 .err{background:#fee2e2;color:#991b1b;}
 .small{font-size:12px;color:#6b7280;}
+
 /* Modal */
 .modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:50;}
 .modal-backdrop.open{display:flex;}
@@ -88,6 +97,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;}
 .modal input[type="search"]{width:260px;padding:8px;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:var(--text);}
 .pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:8px;}
+
 /* Consulta filters */
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0;}
 .box{background:#fff;border:1px solid #d1d5db;border-radius:12px;padding:12px;box-shadow:0 1px 2px rgba(0,0,0,.05);}
@@ -95,15 +105,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 .tag.rev{background:#e2e8f0;color:#1e293b;}
 .tag.apr{background:#dcfce7;color:#14532d;}
 .tag.can{background:#fee2e2;color:#7f1d1d;}
+
 /* Dropzones */
 .drop{border:2px dashed #94a3b8;border-radius:12px;padding:14px;text-align:center;margin-top:10px;cursor:pointer;background:#f9fafb;}
 .file-list{list-style:none;margin:6px 0 0;padding:0;}
 .file-list li{display:flex;justify-content:space-between;gap:8px;padding:6px 8px;border:1px solid #e5e7eb;border-radius:8px;margin:6px 0;background:#fff;}
 .file-list button{background:#e5e7eb;border:none;color:#111827;padding:4px 8px;border-radius:6px;cursor:pointer;}
+
 .topbar{display:none;}
 .logo-sm{font-weight:700;color:var(--brand);}
 .menu-btn{background:none;border:none;font-size:24px;line-height:1;color:var(--text);cursor:pointer;}
 .menu-backdrop{display:none;}
+
 @media (max-width:860px){
   body{display:block;}
   .topbar{display:flex;align-items:center;gap:10px;background:var(--panel);padding:10px;position:fixed;top:0;left:0;right:0;z-index:60;box-shadow:0 1px 3px rgba(0,0,0,.1);}
@@ -118,7 +131,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 
 /* =========================
    MEJORAS UX ADICIONALES
-   (añadidas para formulario compacto / combobox / layout)
+   (form compacto / combobox / layout)
    ========================= */
 
 /* Layout de contenido en dos columnas (principal + lateral) */
@@ -258,4 +271,5 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   .field input, .field select { font-size:13.5px; padding:8px; }
   .drop { font-size:13.5px; padding:8px; }
 }
+
 
