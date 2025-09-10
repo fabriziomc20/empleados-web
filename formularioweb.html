@@ -8,6 +8,7 @@
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
+
 <header class="topbar">
   <button id="menuBtn" class="menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Menú">☰</button>
   <div class="logo-sm">RR.HH. Suite</div>
@@ -16,10 +17,10 @@
 <aside id="sidebar" class="sidebar">
   <div class="logo">RR.HH. Suite</div>
   <nav class="nav" aria-label="Navegación principal">
-    <div style="font-size:12px;opacity:.7;margin:8px 0">Reclutamiento</div>
-    <a href="formularioweb.html" class="active">Formulario</a>
+    <div class="caption">Reclutamiento</div>
+    <a href="formularioweb.html" class="active" aria-current="page">Formulario</a>
     <a href="consulta.html">Consulta</a>
-    <div style="font-size:12px;opacity:.7;margin:12px 0 6px">Operación</div>
+    <div class="caption">Operación</div>
     <a href="empleados.html">Empleados</a>
     <a href="contratos.html">Contratos</a>
     <a href="nomina.html">Nómina</a>
@@ -36,48 +37,96 @@
     <h1>Formulario de Candidato</h1>
     <div id="msg"></div>
 
-    <form id="formEmpleado">
-      <div class="row">
-        <div><label>DNI</label><input type="text" name="dni" required maxlength="12" /></div>
-        <div><label>Grupo</label><input type="text" name="grupo" /></div>
-        <div><label>Apellido Paterno</label><input type="text" name="apellido_paterno" required /></div>
-        <div><label>Apellido Materno</label><input type="text" name="apellido_materno" required /></div>
-        <div><label>Nombres</label><input type="text" name="nombres" required /></div>
-        <div><label>Sede</label><input type="text" name="sede" /></div>
-        <div><label>Turno / Horario</label><input type="text" name="turno_horario" placeholder="Mañana (08:00-16:00)" /></div>
+    <form id="formEmpleado" class="form--compact">
+      <!-- Datos personales -->
+      <div class="form-grid">
+        <div class="field">
+          <label for="dni">DNI</label>
+          <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="12" required placeholder="00000000" />
+          <div class="hint">Solo números, sin guiones</div>
+        </div>
+
+        <div class="field">
+          <label for="grupo">Grupo</label>
+          <input id="grupo" name="grupo" type="text" placeholder="G-01" />
+        </div>
+
+        <div class="field">
+          <label for="apellido_paterno">Ap. Paterno</label>
+          <input id="apellido_paterno" name="apellido_paterno" type="text" required placeholder="Pérez" />
+        </div>
+
+        <div class="field">
+          <label for="apellido_materno">Ap. Materno</label>
+          <input id="apellido_materno" name="apellido_materno" type="text" required placeholder="Soto" />
+        </div>
+
+        <div class="field">
+          <label for="nombres">Nombres</label>
+          <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
+        </div>
+
+        <div class="field">
+          <label for="sede">Sede</label>
+          <!-- Select poblado desde API: value=nombre para no romper backend -->
+          <select id="sede" name="sede">
+            <option value="" disabled selected>Selecciona sede…</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="turno_horario">Turno</label>
+          <!-- Select poblado desde API: value=nombre, se muestra rango si existe -->
+          <select id="turno_horario" name="turno_horario">
+            <option value="" disabled selected>Selecciona turno…</option>
+          </select>
+        </div>
       </div>
 
-      <label>DNI (PDF/JPG/PNG)</label>
-      <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-      <ul id="dniList" class="file-list"></ul>
+      <!-- Archivos (acordeones para ahorrar espacio visual) -->
+      <details class="fold" open>
+        <summary>DNI (PDF/JPG/PNG)</summary>
+        <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        <ul id="dniList" class="file-list"></ul>
+      </details>
 
-      <label>Certificados</label>
-      <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-      <ul id="certificadosList" class="file-list"></ul>
+      <details class="fold">
+        <summary>Certificados</summary>
+        <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        <ul id="certificadosList" class="file-list"></ul>
+      </details>
 
-      <label>Antecedentes</label>
-      <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-      <ul id="antecedentesList" class="file-list"></ul>
+      <details class="fold">
+        <summary>Antecedentes</summary>
+        <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        <ul id="antecedentesList" class="file-list"></ul>
+      </details>
 
-      <label>Documentos Médicos</label>
-      <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-      <ul id="medicosList" class="file-list"></ul>
+      <details class="fold">
+        <summary>Documentos médicos</summary>
+        <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        <ul id="medicosList" class="file-list"></ul>
+      </details>
 
-      <label>Certificados de Capacitación</label>
-      <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-      <ul id="capacitacionList" class="file-list"></ul>
+      <details class="fold">
+        <summary>Capacitación</summary>
+        <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+        <ul id="capacitacionList" class="file-list"></ul>
+      </details>
 
-      <label>CV</label>
-      <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
-      <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
-      <ul id="cvList" class="file-list"></ul>
+      <details class="fold">
+        <summary>CV</summary>
+        <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
+        <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
+        <ul id="cvList" class="file-list"></ul>
+      </details>
 
-      <div class="actions">
+      <div class="actions actions--sticky">
         <button type="submit">Guardar</button>
         <button type="button" class="secondary" id="btnReset">Limpiar</button>
       </div>
@@ -86,6 +135,7 @@
 </main>
 
 <script>
+/* activar link activo */
 document.querySelectorAll('.nav a').forEach(a=>{
   const href=a.getAttribute('href');
   if (href && location.pathname.endsWith(href)){
@@ -93,16 +143,19 @@ document.querySelectorAll('.nav a').forEach(a=>{
     a.setAttribute('aria-current','page');
   }
 });
+
+/* mensajes */
 function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function fmtSize(b){ return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
 
+/* dropzones compactas (IDs/JS idénticos para no romper nada) */
 function initDropzone({inputId, dropId, listId, multiple=true}){
   const input=document.getElementById(inputId), drop=document.getElementById(dropId), list=document.getElementById(listId);
   input._dt=new DataTransfer();
   const openPicker=()=>input.click();
   drop.addEventListener('click', openPicker); drop.addEventListener('dblclick', openPicker);
-  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background='#1f2937'}));
-  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.style.background=''}));
+  ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drop--hover')}));
+  ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drop--hover')}));
   drop.addEventListener('drop',e=>addFiles(Array.from(e.dataTransfer.files||[])));
   input.addEventListener('change',()=>addFiles(Array.from(input.files||[])));
   function addFiles(files){ for(const f of files){ if(!multiple && input._dt.files.length>0){ input._dt=new DataTransfer(); } input._dt.items.add(f); }
@@ -110,7 +163,8 @@ function initDropzone({inputId, dropId, listId, multiple=true}){
   function removeAt(idx){ const dt=new DataTransfer(); Array.from(input._dt.files).forEach((f,i)=>{ if(i!==idx) dt.items.add(f); });
     input._dt=dt; input.files=input._dt.files; renderList(); }
   function renderList(){ list.innerHTML=''; Array.from(input._dt.files).forEach((f,i)=>{ const li=document.createElement('li');
-    li.innerHTML=`<span title="${f.name}">${f.name} · ${fmtSize(f.size)}</span>`; const btn=document.createElement('button'); btn.type='button'; btn.textContent='❌ Quitar';
+    li.innerHTML=`<span class="truncate" title="${f.name}">${f.name}</span><span class="small">${fmtSize(f.size)}</span>`;
+    const btn=document.createElement('button'); btn.type='button'; btn.textContent='Quitar'; btn.className='chip';
     btn.addEventListener('click',()=>removeAt(i)); li.appendChild(btn); list.appendChild(li); }); }
   return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML=''; } };
 }
@@ -121,9 +175,55 @@ const dzMedicos=initDropzone({inputId:'medicosInput',dropId:'medicosDrop',listId
 const dzCapacitacion=initDropzone({inputId:'capacitacionInput',dropId:'capacitacionDrop',listId:'capacitacionList',multiple:true});
 const dzCV=initDropzone({inputId:'cvInput',dropId:'cvDrop',listId:'cvList',multiple:false});
 
-const API_BASE = "https://empleados-api-o6yy.onrender.com"; // <--- CAMBIA
+/* API */
+const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
+const SITES = `${API_BASE}/api/sites`;
+const SHIFTS = `${API_BASE}/api/shifts`;
 
+/* poblar selects de Sede y Turno (valor = nombre) */
+async function populateSites(){
+  try{
+    const r = await fetch(SITES);
+    const data = r.ok ? await r.json() : [];
+    const sel = document.getElementById('sede');
+    if(!sel) return;
+    // Limpia, deja placeholder
+    sel.innerHTML = '<option value="" disabled selected>Selecciona sede…</option>';
+    data.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.name || s.code || '';      // enviamos nombre (fallback: code)
+      opt.textContent = s.name || s.code || '—';
+      opt.dataset.id = s.id ?? '';
+      sel.appendChild(opt);
+    });
+  }catch(e){
+    console.error(e);
+  }
+}
+async function populateShifts(){
+  try{
+    const r = await fetch(SHIFTS);
+    const data = r.ok ? await r.json() : [];
+    const sel = document.getElementById('turno_horario');
+    if(!sel) return;
+    sel.innerHTML = '<option value="" disabled selected>Selecciona turno…</option>';
+    data.forEach(sh=>{
+      const label = sh.start_time && sh.end_time
+        ? `${sh.name} (${sh.start_time}–${sh.end_time})`
+        : (sh.name || '—');
+      const opt = document.createElement('option');
+      opt.value = sh.name || '';                // enviamos nombre (como antes era texto)
+      opt.textContent = label;
+      opt.dataset.id = sh.id ?? '';
+      sel.appendChild(opt);
+    });
+  }catch(e){
+    console.error(e);
+  }
+}
+
+/* submit */
 document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
   const fd = new FormData(ev.target);
@@ -135,20 +235,19 @@ document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
     showMsg('ok','Candidato registrado');
     dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
     ev.target.reset();
-    // setTimeout(()=> location.href='consulta.html', 600); // opcional
   }catch(e){ console.error(e); showMsg('err',`Error al enviar: ${e.message}`); }
 });
 document.getElementById('btnReset').addEventListener('click',()=>{
   dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
   document.getElementById('formEmpleado').reset();
 });
-</script>
-<script>
+
+/* menú móvil */
 function closeMenu(){
   document.body.classList.remove('menu-open');
   document.getElementById('menuBtn').setAttribute('aria-expanded','false');
 }
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', async ()=>{
   const btn=document.getElementById('menuBtn');
   const backdrop=document.getElementById('backdrop');
   btn?.addEventListener('click',()=>{
@@ -157,10 +256,14 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+
+  /* carga inicial de selects */
+  await Promise.all([populateSites(), populateShifts()]);
 });
 </script>
 </body>
 </html>
+
 
 
 
