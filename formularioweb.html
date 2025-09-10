@@ -19,7 +19,7 @@
   <nav class="nav" aria-label="Navegación principal">
     <div class="caption">Reclutamiento</div>
     <a href="formularioweb.html" class="active" aria-current="page">Formulario</a>
-    <a href="consulta.html">Consulta</a>
+    <!-- Eliminado: <a href="consulta.html">Consulta</a> -->
     <div class="caption">Operación</div>
     <a href="empleados.html">Empleados</a>
     <a href="contratos.html">Contratos</a>
@@ -33,9 +33,9 @@
 <div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
 
 <main id="main" class="main" tabindex="-1">
-  <!-- NUEVO: contenedor en dos columnas (principal + lateral) -->
+  <!-- Contenedor en dos columnas -->
   <div class="two-col">
-    <!-- Columna principal (ancho controlado) -->
+    <!-- Columna principal -->
     <section class="card card--narrow">
       <h1>Formulario de Candidato</h1>
       <div id="msg"></div>
@@ -69,30 +69,30 @@
             <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
           </div>
 
-          <!-- Sede: COMBOBOX -->
+          <!-- Sede: combobox -->
           <div class="field">
             <label for="sede_input">Sede</label>
             <div class="combo" role="combobox" aria-expanded="false" aria-owns="sede_listbox" aria-haspopup="listbox">
               <input id="sede_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="sede_listbox" autocomplete="off" />
-              <input id="sede" name="sede" type="hidden" /> <!-- valor real enviado (nombre) -->
+              <input id="sede" name="sede" type="hidden" />
               <ul id="sede_listbox" class="combo-list" role="listbox"></ul>
             </div>
             <div class="hint">Selecciona una de la lista</div>
           </div>
 
-          <!-- Turno: COMBOBOX -->
+          <!-- Turno: combobox -->
           <div class="field">
             <label for="turno_input">Turno</label>
             <div class="combo" role="combobox" aria-expanded="false" aria-owns="turno_listbox" aria-haspopup="listbox">
               <input id="turno_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="turno_listbox" autocomplete="off" />
-              <input id="turno_horario" name="turno_horario" type="hidden" /> <!-- valor real enviado (nombre) -->
+              <input id="turno_horario" name="turno_horario" type="hidden" />
               <ul id="turno_listbox" class="combo-list" role="listbox"></ul>
             </div>
             <div class="hint">Ej: Mañana (08:00–16:00)</div>
           </div>
         </div>
 
-        <!-- Archivos en acordeones (compactos) -->
+        <!-- Archivos -->
         <details class="fold" open>
           <summary>DNI (PDF/JPG/PNG)</summary>
           <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
@@ -142,15 +142,19 @@
       </form>
     </section>
 
-    <!-- Columna lateral (espacio para tarjetas/widgets futuros) -->
+    <!-- Columna lateral -->
     <aside class="side">
       <div class="card side-card">
-        <h2>Notas</h2>
-        <p class="small">Aquí puedes añadir tarjetas: checklist de requisitos, atajos a políticas, estadísticas, etc.</p>
+        <h2>Consulta rápida</h2>
+        <p class="small">Abre el listado de candidatos en otra pestaña sin salir del formulario.</p>
+        <button class="secondary" onclick="window.open('consulta.html','_blank','noopener')" aria-label="Abrir Consulta en una nueva pestaña">
+          Abrir Consulta ↗
+        </button>
       </div>
+
       <div class="card side-card">
-        <h2>Ayuda</h2>
-        <p class="small">Tip: usa el buscador del combo para filtrar sedes y turnos por nombre o rango.</p>
+        <h2>Notas</h2>
+        <p class="small">Espacio libre para futuros widgets o recordatorios.</p>
       </div>
     </aside>
   </div>
@@ -188,7 +192,7 @@ function initDropzone({inputId, dropId, listId, multiple=true}){
     li.innerHTML=`<span class="truncate" title="${f.name}">${f.name}</span><span class="small">${fmtSize(f.size)}</span>`;
     const btn=document.createElement('button'); btn.type='button'; btn.textContent='Quitar'; btn.className='chip';
     btn.addEventListener('click',()=>removeAt(i)); li.appendChild(btn); list.appendChild(li); }); }
-  return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML=''; } };
+  return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML:''; } };
 }
 const dzDni=initDropzone({inputId:'dniInput',dropId:'dniDrop',listId:'dniList',multiple:true});
 const dzCertificados=initDropzone({inputId:'certificadosInput',dropId:'certificadosDrop',listId:'certificadosList',multiple:true});
@@ -203,11 +207,7 @@ const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 const SITES = `${API_BASE}/api/sites`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
-/* ===== Combobox genérico =====
-   - input visible: escribe y filtra
-   - listbox: muestra opciones
-   - hidden: guarda el valor a enviar
-*/
+/* ===== Combobox genérico ===== */
 function createCombobox({inputId, listboxId, hiddenId, items, toLabel, toValue}) {
   const input = document.getElementById(inputId);
   const list = document.getElementById(listboxId);
@@ -257,7 +257,6 @@ function createCombobox({inputId, listboxId, hiddenId, items, toLabel, toValue})
     if(!combo.contains(e.target)) setOpen(false);
   });
 
-  // Primera render inicial (cerrado)
   render();
   setOpen(false);
 
@@ -270,7 +269,7 @@ function createCombobox({inputId, listboxId, hiddenId, items, toLabel, toValue})
   };
 }
 
-/* poblar con datos de API y montar combobox */
+/* Combos de Sede y Turno */
 let cbSede, cbTurno;
 
 async function populateSites(){
@@ -312,7 +311,7 @@ document.getElementById('btnReset').addEventListener('click',()=>{
   document.getElementById('formEmpleado').reset();
 });
 
-/* menú móvil */
+/* menú móvil + combos */
 function closeMenu(){
   document.body.classList.remove('menu-open');
   document.getElementById('menuBtn').setAttribute('aria-expanded','false');
@@ -327,7 +326,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
-  /* Instancia combobox Sede */
   cbSede = createCombobox({
     inputId:'sede_input',
     listboxId:'sede_listbox',
@@ -337,7 +335,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     toValue:(it)=> it.name
   });
 
-  /* Instancia combobox Turno */
   cbTurno = createCombobox({
     inputId:'turno_input',
     listboxId:'turno_listbox',
@@ -347,12 +344,13 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     toValue:(it)=> it.name
   });
 
-  /* Carga inicial */
   await Promise.all([populateSites(), populateShifts()]);
 });
 </script>
 </body>
 </html>
+
+
 
 
 
