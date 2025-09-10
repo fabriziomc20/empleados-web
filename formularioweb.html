@@ -33,104 +33,126 @@
 <div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
 
 <main id="main" class="main" tabindex="-1">
-  <div class="card">
-    <h1>Formulario de Candidato</h1>
-    <div id="msg"></div>
+  <!-- NUEVO: contenedor en dos columnas (principal + lateral) -->
+  <div class="two-col">
+    <!-- Columna principal (ancho controlado) -->
+    <section class="card card--narrow">
+      <h1>Formulario de Candidato</h1>
+      <div id="msg"></div>
 
-    <form id="formEmpleado" class="form--compact">
-      <!-- Datos personales -->
-      <div class="form-grid">
-        <div class="field">
-          <label for="dni">DNI</label>
-          <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="12" required placeholder="00000000" />
-          <div class="hint">Solo números, sin guiones</div>
+      <form id="formEmpleado" class="form--compact">
+        <!-- Datos personales -->
+        <div class="form-grid">
+          <div class="field">
+            <label for="dni">DNI</label>
+            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="12" required placeholder="00000000" />
+            <div class="hint">Solo números, sin guiones</div>
+          </div>
+
+          <div class="field">
+            <label for="grupo">Grupo</label>
+            <input id="grupo" name="grupo" type="text" placeholder="G-01" />
+          </div>
+
+          <div class="field">
+            <label for="apellido_paterno">Ap. Paterno</label>
+            <input id="apellido_paterno" name="apellido_paterno" type="text" required placeholder="Pérez" />
+          </div>
+
+          <div class="field">
+            <label for="apellido_materno">Ap. Materno</label>
+            <input id="apellido_materno" name="apellido_materno" type="text" required placeholder="Soto" />
+          </div>
+
+          <div class="field">
+            <label for="nombres">Nombres</label>
+            <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
+          </div>
+
+          <!-- Sede: COMBOBOX -->
+          <div class="field">
+            <label for="sede_input">Sede</label>
+            <div class="combo" role="combobox" aria-expanded="false" aria-owns="sede_listbox" aria-haspopup="listbox">
+              <input id="sede_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="sede_listbox" autocomplete="off" />
+              <input id="sede" name="sede" type="hidden" /> <!-- valor real enviado (nombre) -->
+              <ul id="sede_listbox" class="combo-list" role="listbox"></ul>
+            </div>
+            <div class="hint">Selecciona una de la lista</div>
+          </div>
+
+          <!-- Turno: COMBOBOX -->
+          <div class="field">
+            <label for="turno_input">Turno</label>
+            <div class="combo" role="combobox" aria-expanded="false" aria-owns="turno_listbox" aria-haspopup="listbox">
+              <input id="turno_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="turno_listbox" autocomplete="off" />
+              <input id="turno_horario" name="turno_horario" type="hidden" /> <!-- valor real enviado (nombre) -->
+              <ul id="turno_listbox" class="combo-list" role="listbox"></ul>
+            </div>
+            <div class="hint">Ej: Mañana (08:00–16:00)</div>
+          </div>
         </div>
 
-        <div class="field">
-          <label for="grupo">Grupo</label>
-          <input id="grupo" name="grupo" type="text" placeholder="G-01" />
-        </div>
+        <!-- Archivos en acordeones (compactos) -->
+        <details class="fold" open>
+          <summary>DNI (PDF/JPG/PNG)</summary>
+          <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="dniList" class="file-list"></ul>
+        </details>
 
-        <div class="field">
-          <label for="apellido_paterno">Ap. Paterno</label>
-          <input id="apellido_paterno" name="apellido_paterno" type="text" required placeholder="Pérez" />
-        </div>
+        <details class="fold">
+          <summary>Certificados</summary>
+          <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="certificadosList" class="file-list"></ul>
+        </details>
 
-        <div class="field">
-          <label for="apellido_materno">Ap. Materno</label>
-          <input id="apellido_materno" name="apellido_materno" type="text" required placeholder="Soto" />
-        </div>
+        <details class="fold">
+          <summary>Antecedentes</summary>
+          <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="antecedentesList" class="file-list"></ul>
+        </details>
 
-        <div class="field">
-          <label for="nombres">Nombres</label>
-          <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
-        </div>
+        <details class="fold">
+          <summary>Documentos médicos</summary>
+          <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="medicosList" class="file-list"></ul>
+        </details>
 
-        <div class="field">
-          <label for="sede">Sede</label>
-          <!-- Select poblado desde API: value=nombre para no romper backend -->
-          <select id="sede" name="sede">
-            <option value="" disabled selected>Selecciona sede…</option>
-          </select>
-        </div>
+        <details class="fold">
+          <summary>Capacitación</summary>
+          <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="capacitacionList" class="file-list"></ul>
+        </details>
 
-        <div class="field">
-          <label for="turno_horario">Turno</label>
-          <!-- Select poblado desde API: value=nombre, se muestra rango si existe -->
-          <select id="turno_horario" name="turno_horario">
-            <option value="" disabled selected>Selecciona turno…</option>
-          </select>
+        <details class="fold">
+          <summary>CV</summary>
+          <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
+          <ul id="cvList" class="file-list"></ul>
+        </details>
+
+        <div class="actions actions--sticky">
+          <button type="submit">Guardar</button>
+          <button type="button" class="secondary" id="btnReset">Limpiar</button>
         </div>
+      </form>
+    </section>
+
+    <!-- Columna lateral (espacio para tarjetas/widgets futuros) -->
+    <aside class="side">
+      <div class="card side-card">
+        <h2>Notas</h2>
+        <p class="small">Aquí puedes añadir tarjetas: checklist de requisitos, atajos a políticas, estadísticas, etc.</p>
       </div>
-
-      <!-- Archivos (acordeones para ahorrar espacio visual) -->
-      <details class="fold" open>
-        <summary>DNI (PDF/JPG/PNG)</summary>
-        <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-        <ul id="dniList" class="file-list"></ul>
-      </details>
-
-      <details class="fold">
-        <summary>Certificados</summary>
-        <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-        <ul id="certificadosList" class="file-list"></ul>
-      </details>
-
-      <details class="fold">
-        <summary>Antecedentes</summary>
-        <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-        <ul id="antecedentesList" class="file-list"></ul>
-      </details>
-
-      <details class="fold">
-        <summary>Documentos médicos</summary>
-        <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-        <ul id="medicosList" class="file-list"></ul>
-      </details>
-
-      <details class="fold">
-        <summary>Capacitación</summary>
-        <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
-        <ul id="capacitacionList" class="file-list"></ul>
-      </details>
-
-      <details class="fold">
-        <summary>CV</summary>
-        <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
-        <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
-        <ul id="cvList" class="file-list"></ul>
-      </details>
-
-      <div class="actions actions--sticky">
-        <button type="submit">Guardar</button>
-        <button type="button" class="secondary" id="btnReset">Limpiar</button>
+      <div class="card side-card">
+        <h2>Ayuda</h2>
+        <p class="small">Tip: usa el buscador del combo para filtrar sedes y turnos por nombre o rango.</p>
       </div>
-    </form>
+    </aside>
   </div>
 </main>
 
@@ -148,7 +170,7 @@ document.querySelectorAll('.nav a').forEach(a=>{
 function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function fmtSize(b){ return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
 
-/* dropzones compactas (IDs/JS idénticos para no romper nada) */
+/* dropzones (igual que siempre) */
 function initDropzone({inputId, dropId, listId, multiple=true}){
   const input=document.getElementById(inputId), drop=document.getElementById(dropId), list=document.getElementById(listId);
   input._dt=new DataTransfer();
@@ -181,46 +203,94 @@ const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 const SITES = `${API_BASE}/api/sites`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
-/* poblar selects de Sede y Turno (valor = nombre) */
+/* ===== Combobox genérico =====
+   - input visible: escribe y filtra
+   - listbox: muestra opciones
+   - hidden: guarda el valor a enviar
+*/
+function createCombobox({inputId, listboxId, hiddenId, items, toLabel, toValue}) {
+  const input = document.getElementById(inputId);
+  const list = document.getElementById(listboxId);
+  const hidden = document.getElementById(hiddenId);
+  const combo = input?.closest('.combo');
+
+  let open = false;
+  let activeIndex = -1;
+  let curItems = items.slice();
+
+  function setOpen(v){
+    open = v;
+    combo?.setAttribute('aria-expanded', v ? 'true' : 'false');
+    list.style.display = v ? 'block' : 'none';
+  }
+  function render(){
+    const q = (input.value || '').toLowerCase().trim();
+    curItems = items.filter(it => toLabel(it).toLowerCase().includes(q));
+    list.innerHTML = curItems.map((it, i) =>
+      `<li role="option" id="${listboxId}_opt_${i}" class="combo-opt${i===activeIndex?' is-active':''}">${toLabel(it)}</li>`
+    ).join('') || `<li class="combo-empty">Sin resultados</li>`;
+  }
+  function commit(it){
+    input.value = toLabel(it);
+    hidden.value = toValue(it);
+    setOpen(false);
+  }
+
+  input.addEventListener('focus', ()=>{ render(); setOpen(true); });
+  input.addEventListener('input', ()=>{ activeIndex=-1; render(); setOpen(true); });
+  input.addEventListener('keydown', (e)=>{
+    if(!open && (e.key==='ArrowDown' || e.key==='Enter')) { render(); setOpen(true); return; }
+    if(e.key==='ArrowDown'){ activeIndex = Math.min(activeIndex+1, curItems.length-1); render(); e.preventDefault(); }
+    if(e.key==='ArrowUp'){ activeIndex = Math.max(activeIndex-1, 0); render(); e.preventDefault(); }
+    if(e.key==='Enter'){
+      if(open && curItems[activeIndex]){ commit(curItems[activeIndex]); e.preventDefault(); }
+      else setOpen(false);
+    }
+    if(e.key==='Escape'){ setOpen(false); }
+  });
+  list.addEventListener('mousedown', (e)=>{
+    const li = e.target.closest('li[role="option"]'); if(!li) return;
+    const i = Array.from(list.children).indexOf(li);
+    if(i>=0 && curItems[i]) commit(curItems[i]);
+  });
+  document.addEventListener('click', (e)=>{
+    if(!combo.contains(e.target)) setOpen(false);
+  });
+
+  // Primera render inicial (cerrado)
+  render();
+  setOpen(false);
+
+  return {
+    updateItems(newItems){ items = newItems || []; render(); },
+    setValueByLabel(lbl){
+      const it = items.find(x => toLabel(x) === lbl);
+      if(it) commit(it);
+    }
+  };
+}
+
+/* poblar con datos de API y montar combobox */
+let cbSede, cbTurno;
+
 async function populateSites(){
   try{
     const r = await fetch(SITES);
     const data = r.ok ? await r.json() : [];
-    const sel = document.getElementById('sede');
-    if(!sel) return;
-    // Limpia, deja placeholder
-    sel.innerHTML = '<option value="" disabled selected>Selecciona sede…</option>';
-    data.forEach(s=>{
-      const opt = document.createElement('option');
-      opt.value = s.name || s.code || '';      // enviamos nombre (fallback: code)
-      opt.textContent = s.name || s.code || '—';
-      opt.dataset.id = s.id ?? '';
-      sel.appendChild(opt);
-    });
-  }catch(e){
-    console.error(e);
-  }
+    const items = data.map(s=>({ id:s.id, code:s.code, name:s.name || s.code || '' }));
+    cbSede?.updateItems(items);
+  }catch(e){ console.error(e); }
 }
 async function populateShifts(){
   try{
     const r = await fetch(SHIFTS);
     const data = r.ok ? await r.json() : [];
-    const sel = document.getElementById('turno_horario');
-    if(!sel) return;
-    sel.innerHTML = '<option value="" disabled selected>Selecciona turno…</option>';
-    data.forEach(sh=>{
-      const label = sh.start_time && sh.end_time
-        ? `${sh.name} (${sh.start_time}–${sh.end_time})`
-        : (sh.name || '—');
-      const opt = document.createElement('option');
-      opt.value = sh.name || '';                // enviamos nombre (como antes era texto)
-      opt.textContent = label;
-      opt.dataset.id = sh.id ?? '';
-      sel.appendChild(opt);
+    const items = data.map(sh=>{
+      const label = (sh.start_time && sh.end_time) ? `${sh.name} (${sh.start_time}–${sh.end_time})` : (sh.name || '');
+      return { id:sh.id, name:sh.name || '', label };
     });
-  }catch(e){
-    console.error(e);
-  }
+    cbTurno?.updateItems(items);
+  }catch(e){ console.error(e); }
 }
 
 /* submit */
@@ -257,12 +327,34 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
-  /* carga inicial de selects */
+  /* Instancia combobox Sede */
+  cbSede = createCombobox({
+    inputId:'sede_input',
+    listboxId:'sede_listbox',
+    hiddenId:'sede',
+    items:[],
+    toLabel:(it)=> it.name,
+    toValue:(it)=> it.name
+  });
+
+  /* Instancia combobox Turno */
+  cbTurno = createCombobox({
+    inputId:'turno_input',
+    listboxId:'turno_listbox',
+    hiddenId:'turno_horario',
+    items:[],
+    toLabel:(it)=> it.label,
+    toValue:(it)=> it.name
+  });
+
+  /* Carga inicial */
   await Promise.all([populateSites(), populateShifts()]);
 });
 </script>
 </body>
 </html>
+
+
 
 
 
