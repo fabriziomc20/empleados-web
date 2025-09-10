@@ -36,13 +36,28 @@ body{
 .nav a:hover{background:#e5e7eb;}
 .sep{height:1px;background:#e5e7eb;margin:12px 0;}
 /* ── Títulos de sección del sidebar (mejor jerarquía) ── */
-.caption{
+.caption {
   font-size:13px;
   font-weight:600;
   text-transform:uppercase;
-  color:#374151;           /* más contraste */
-  letter-spacing:.4px;     /* mejor legibilidad */
-  margin:18px 0 10px;      /* más separación de grupos */
+  color:#374151;
+  letter-spacing:.4px;
+  margin:20px 0 10px;
+  position:relative;
+  padding-top:8px;   /* espaciado extra */
+}
+
+.caption::before {
+  content:"";
+  display:block;
+  height:1px;
+  background:#d1d5db;
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+}
+
 }
 .main{flex:1;padding:20px;}
 .card{
