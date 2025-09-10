@@ -75,24 +75,14 @@
     </div>
 
     <!-- SEDES -->
-    <div class="card" x-data="{open:false}">
+    <div class="card">
       <h2>Sedes</h2>
       <div class="row">
         <div><label>Nombre de la Sede</label><input id="siteName" placeholder="Sede Lima"></div>
       </div>
       <div class="actions">
         <button id="btnSiteAdd">Agregar</button>
-        <button class="secondary" hx-get="partials/sites-list.html" hx-target="#sitesModalBody" @click="open=true">Ver todo</button>
-      </div>
-
-      <div x-cloak x-bind:class="open ? 'modal-backdrop open' : 'modal-backdrop'" @click.self="open=false">
-        <div class="modal">
-          <header>
-            <h3>Listado de Sedes</h3>
-            <button @click="open=false" aria-label="Cerrar">✖</button>
-          </header>
-          <div id="sitesModalBody">Cargando…</div>
-        </div>
+        <button class="secondary" onclick="openSitesModal()">Ver todo</button>
       </div>
     </div>
 
@@ -105,7 +95,7 @@
       <div class="small">El código interno se genera automáticamente.</div>
       <div class="actions">
         <button id="btnProjAdd">Agregar</button>
-        <button class="secondary" id="btnProjectsView">Ver todo</button>
+        <button class="secondary" onclick="openProjectsModal()">Ver todo</button>
       </div>
     </div>
 
@@ -119,7 +109,7 @@
       </div>
       <div class="actions">
         <button id="btnShiftAdd">Agregar</button>
-        <button class="secondary" id="btnShiftsView">Ver todo</button>
+        <button class="secondary" onclick="openShiftsModal()">Ver todo</button>
       </div>
     </div>
 
@@ -422,7 +412,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       showMsg('ok','Proyecto creado.'); await reloadProjects();
     }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
   });
-  $('btnProjectsView')&& $('btnProjectsView').addEventListener('click', ()=> openProjectsModal());
 
   $('btnShiftAdd')    && $('btnShiftAdd').addEventListener('click', async ()=>{
     try{
@@ -436,7 +425,6 @@ window.addEventListener('DOMContentLoaded', async () => {
       showMsg('ok','Turno creado.'); await reloadShifts();
     }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
   });
-  $('btnShiftsView')  && $('btnShiftsView').addEventListener('click', ()=> openShiftsModal());
 
   // init
   try{ await loadEmployer(); }catch{}
@@ -451,6 +439,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   await reloadShifts();
 });
 </script>
+
 <script>
 function closeMenu(){
   document.body.classList.remove('menu-open');
@@ -469,6 +458,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
 
 
