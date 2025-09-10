@@ -286,5 +286,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   .field input, .field select { font-size:13.5px; padding:8px; }
   .drop { font-size:13.5px; padding:8px; }
 }
+/* Evita doble línea antes de los títulos de sección */
+.nav .sep + .caption::before { display: none; }         /* si hay .sep antes, no dibujar otra línea */
+.nav .caption:first-of-type::before { display: none; }  /* la primera caption no necesita línea arriba */
 
 
