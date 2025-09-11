@@ -5,6 +5,26 @@
 <title>Reclutamiento – Consulta</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Extras mínimos para esta pantalla */
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
+  .toolbar .grow{flex:1}
+  .searchbox{position:relative}
+  .searchbox input{padding-left:30px}
+  .searchbox .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55}
+  .table-wrap{overflow:auto;border-radius:12px;border:1px solid #e5e7eb;background:#fff;margin-top:10px}
+  #tabla{margin:0}
+  #tabla thead th{position:sticky;top:0;z-index:1}
+  #tabla thead th.sortable{cursor:pointer;user-select:none}
+  #tabla thead th.sortable::after{content:"↕";margin-left:6px;opacity:.4;font-size:12px}
+  #tabla thead th.sortable.asc::after{content:"↑"}
+  #tabla thead th.sortable.desc::after{content:"↓"}
+  .skeleton td{height:40px;background:linear-gradient(90deg,#f3f4f6,#e5e7eb,#f3f4f6);background-size:200% 100%;animation:sk 1.3s infinite}
+  @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .pagerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
+  .pagerbar .right{display:flex;gap:10px;align-items:center}
+  .muted{color:#6b7280;font-size:12.5px}
+</style>
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -13,14 +33,13 @@
   <div class="logo-sm">RR.HH. Suite</div>
 </header>
 
-<!-- Sidebar -->
 <aside id="sidebar" class="sidebar">
   <div class="logo">RR.HH. Suite</div>
   <nav class="nav" aria-label="Navegación principal">
-    <div style="font-size:12px;opacity:.7;margin:8px 0">Reclutamiento</div>
+    <div class="caption">Reclutamiento</div>
     <a href="formularioweb.html">Formulario</a>
-    <a href="consulta.html" class="active">Consulta</a>
-    <div style="font-size:12px;opacity:.7;margin:12px 0 6px">Operación</div>
+    <a href="consulta.html" class="active" aria-current="page">Consulta</a>
+    <div class="caption">Operación</div>
     <a href="empleados.html">Empleados</a>
     <a href="contratos.html">Contratos</a>
     <a href="nomina.html">Nómina</a>
@@ -35,20 +54,20 @@
 <main id="main" class="main" tabindex="-1">
   <div class="card">
     <h1>Consulta de Candidatos</h1>
-
     <div id="msg"></div>
 
+    <!-- Filtros -->
     <div class="filters">
-      <div class="box">
+      <div class="box" id="boxFecha">
         <div style="margin-bottom:8px">
           <label><input type="radio" name="modo" value="fecha" checked> Filtrar por Mes + Año</label>
         </div>
-        <label>Año</label>
+        <label for="filtroAno">Año</label>
         <select id="filtroAno">
           <option value="TODOS">TODOS</option>
           <option>2023</option><option>2024</option><option>2025</option>
         </select>
-        <label>Mes</label>
+        <label for="filtroMes">Mes</label>
         <select id="filtroMes">
           <option value="TODOS">TODOS</option>
           <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
@@ -56,8 +75,7 @@
           <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
           <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
         </select>
-        <span style="display:inline-block;margin-left:10px"></span>
-        <label>Estado</label>
+        <label for="filtroEstado">Estado</label>
         <select id="filtroEstado">
           <option value="">(Todos)</option>
           <option value="EN_REVISION">En revisión</option>
@@ -66,93 +84,165 @@
         </select>
       </div>
 
-      <div class="box">
+      <div class="box" id="boxGrupo">
         <div style="margin-bottom:8px">
           <label><input type="radio" name="modo" value="grupo"> Filtrar por Grupo (rango)</label>
         </div>
-        <label>Desde</label>
+        <label for="grupoInicio">Desde</label>
         <input id="grupoInicio" type="number" min="1" style="width:110px" />
-        <label>Hasta</label>
+        <label for="grupoFin">Hasta</label>
         <input id="grupoFin" type="number" min="1" style="width:110px" />
-        <div style="font-size:12px;color:#9CA3AF;margin-top:6px">
-          Ej.: 49–52 (si solo “Desde”, filtra ese grupo exacto).
-        </div>
+        <div class="small">Ej.: 49–52 (si solo “Desde”, filtra ese grupo exacto).</div>
       </div>
     </div>
 
-    <div style="display:flex;gap:10px;align-items:center">
+    <!-- Barra de acciones -->
+    <div class="toolbar">
+      <div class="searchbox grow">
+        <span class="icon">🔎</span>
+        <input id="q" type="text" placeholder="Buscar por DNI o nombre…" />
+      </div>
       <button id="btnConsultar">Consultar</button>
       <button id="btnLimpiar" class="secondary">Limpiar</button>
+      <button id="btnExport" class="secondary" disabled>Exportar CSV</button>
     </div>
 
-    <table id="tabla">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>DNI</th>
-          <th>Nombre</th>
-          <th>Sede</th>
-          <th>Turno</th>
-          <th>Grupo</th>
-          <th>Estado</th>
-          <th>Fecha</th>
-          <th>DNI Doc</th>
-          <th>Certif.</th>
-          <th>Anteced.</th>
-          <th>Médicos</th>
-          <th>Capacit.</th>
-          <th>CV</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- Tabla -->
+    <div class="table-wrap" role="region" aria-label="Resultados">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th class="sortable" data-key="id">ID</th>
+            <th class="sortable" data-key="dni">DNI</th>
+            <th class="sortable" data-key="nombre_completo">Nombre</th>
+            <th class="sortable" data-key="sede">Sede</th>
+            <th>Turno</th>
+            <th class="sortable" data-key="grupo">Grupo</th>
+            <th class="sortable" data-key="estado">Estado</th>
+            <th class="sortable" data-key="fecha">Fecha</th>
+            <th>DNI Doc</th>
+            <th>Certif.</th>
+            <th>Anteced.</th>
+            <th>Médicos</th>
+            <th>Capacit.</th>
+            <th>CV</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagerbar">
+      <div class="muted" id="resume">0 resultados</div>
+      <div class="right">
+        <label class="small">Filas por página
+          <select id="pageSize">
+            <option>10</option><option selected>25</option><option>50</option><option>100</option>
+          </select>
+        </label>
+        <button class="secondary" id="prevPage">« Anterior</button>
+        <span class="small" id="pageInfo">1 / 1</span>
+        <button class="secondary" id="nextPage">Siguiente »</button>
+      </div>
+    </div>
 
   </div>
 </main>
 
 <script>
-const API_BASE = "https://empleados-api-o6yy.onrender.com"; // <-- CAMBIA ESTO
+/* ====== Helpers básicos ====== */
+const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
-function showMsg(type, text){
-  const box = document.getElementById('msg');
-  box.className = type==='ok'?'ok':'err';
-  box.textContent = text;
-  box.style.display = 'block';
+const $ = (id)=>document.getElementById(id);
+function showMsg(type, text){ const box=$('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
+function clearMsg(){ const box=$('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
+function tagEstado(estado){
+  if (estado === 'APROBADO') return `<span class="tag apr">Aprobado</span>`;
+  if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
+  return `<span class="tag rev">En revisión</span>`;
 }
-function clearMsg(){ const box = document.getElementById('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
+function linkDoc(url, id){
+  return url ? `<a href="${url}" target="_blank" rel="noopener">📎 Descargar</a>`
+             : `<a href="formularioweb.html?id=${id}">⬆️ Subir</a>`;
+}
 
-document.querySelectorAll('.nav a').forEach(a=>{
-  const href=a.getAttribute('href');
-  if (href && location.pathname.endsWith(href)){
-    a.classList.add('active');
-    a.setAttribute('aria-current','page');
-  }
-});
+/* ====== Estado de UI / Resultados ====== */
+let RAW = [];            // resultados crudos
+let FILTERED = [];       // tras búsqueda rápida y orden
+let page = 1;
+let pageSize = 25;
+let sortKey = 'fecha';
+let sortDir = 'desc';    // 'asc' | 'desc'
 
-document.getElementById("btnConsultar").addEventListener("click", consultar);
-document.getElementById("btnLimpiar").addEventListener("click", ()=>{
-  document.getElementById("filtroAno").value = "TODOS";
-  document.getElementById("filtroMes").value = "TODOS";
-  document.getElementById("filtroEstado").value = "";
-  document.getElementById("grupoInicio").value = "";
-  document.getElementById("grupoFin").value = "";
-  document.querySelector("input[name='modo'][value='fecha']").checked = true;
-  clearMsg();
-  renderTabla([]);
-});
+/* ====== URL <-> Estado (deep link) ====== */
+function readURL(){
+  const u = new URL(location.href);
+  const get = (k,def='') => u.searchParams.get(k) ?? def;
 
+  const modo = get('modo','fecha');
+  document.querySelector(`input[name="modo"][value="${modo}"]`).checked = true;
+  $('filtroAno').value = get('ano','TODOS');
+  $('filtroMes').value = get('mes','TODOS');
+  $('filtroEstado').value = get('estado','');
+  $('grupoInicio').value = get('gini','');
+  $('grupoFin').value = get('gfin','');
+  $('q').value = get('q','');
+  page = parseInt(get('p','1')) || 1;
+  pageSize = parseInt(get('ps','25')) || 25;
+  $('pageSize').value = String(pageSize);
+  applyModeDisable();
+}
+function writeURL(){
+  const u = new URL(location.href);
+  const modo = document.querySelector('input[name="modo"]:checked').value;
+  const ano = $('filtroAno').value;
+  const mes = $('filtroMes').value;
+  const estado = $('filtroEstado').value;
+  const gini = $('grupoInicio').value.trim();
+  const gfin = $('grupoFin').value.trim();
+  const q = $('q').value.trim();
+
+  u.searchParams.set('modo', modo);
+  u.searchParams.set('ano', ano);
+  u.searchParams.set('mes', mes);
+  u.searchParams.set('estado', estado);
+  if(gini) u.searchParams.set('gini', gini); else u.searchParams.delete('gini');
+  if(gfin) u.searchParams.set('gfin', gfin); else u.searchParams.delete('gfin');
+  if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
+  u.searchParams.set('p', String(page));
+  u.searchParams.set('ps', String(pageSize));
+  history.replaceState(null, '', u.toString());
+}
+
+/* ====== Filtros (habilitar/deshabilitar campos) ====== */
+function applyModeDisable(){
+  const modo = document.querySelector('input[name="modo"]:checked').value;
+  const byFecha = (modo === 'fecha');
+
+  ['filtroAno','filtroMes','filtroEstado'].forEach(id=>{
+    $(id).disabled = !byFecha;
+  });
+  ['grupoInicio','grupoFin'].forEach(id=>{
+    $(id).disabled = byFecha;
+  });
+}
+
+/* ====== Fetch de datos ====== */
 async function consultar(){
   clearMsg();
-  const modo = document.querySelector("input[name='modo']:checked").value;
-  const estado = document.getElementById("filtroEstado").value;
+  applyModeDisable();
+  writeURL();
 
+  const modo = document.querySelector('input[name="modo"]:checked').value;
+  const estado = $('filtroEstado').value;
   let url = new URL(API_CANDIDATOS);
 
   if(modo === "fecha"){
-    const ano = document.getElementById("filtroAno").value;
-    const mes = document.getElementById("filtroMes").value;
+    const ano = $('filtroAno').value;
+    const mes = $('filtroMes').value;
     if (mes !== "TODOS" && ano === "TODOS"){
       showMsg('err', "Si seleccionas un mes específico, el año no puede ser TODOS.");
       return;
@@ -160,12 +250,15 @@ async function consultar(){
     url.searchParams.set("ano", ano);
     url.searchParams.set("mes", mes);
   } else {
-    const ini = document.getElementById("grupoInicio").value.trim();
-    const fin = document.getElementById("grupoFin").value.trim();
+    const ini = $('grupoInicio').value.trim();
+    const fin = $('grupoFin').value.trim();
     if (ini && !fin) { url.searchParams.set("grupoInicio", ini); url.searchParams.set("grupoFin", ini); }
     if (ini && fin)  { url.searchParams.set("grupoInicio", ini); url.searchParams.set("grupoFin", fin); }
   }
   if (estado) url.searchParams.set("estado", estado);
+
+  // Skeleton
+  renderSkeleton();
 
   try{
     const res = await fetch(url.toString());
@@ -174,28 +267,64 @@ async function consultar(){
       try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
-    const data = await res.json();
-    renderTabla(data);
-    if (data.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
+    RAW = await res.json();
+    page = 1; // reset página en cada consulta
+    applySearchSortPaginate();
+    if (RAW.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
+    $('btnExport').disabled = RAW.length === 0;
   }catch(e){
     console.error(e);
     showMsg('err', `Error al consultar: ${e.message}`);
+    renderTabla([]);
   }
 }
 
-function tagEstado(estado){
-  if (estado === 'APROBADO') return `<span class="tag apr">Aprobado</span>`;
-  if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
-  return `<span class="tag rev">En revisión</span>`;
+/* ====== Búsqueda rápida + orden + paginación ====== */
+function applySearchSortPaginate(){
+  const q = $('q').value.trim().toLowerCase();
+  // Buscar por DNI o nombre
+  FILTERED = RAW.filter(r=>{
+    if(!q) return true;
+    return (String(r.dni||'').toLowerCase().includes(q) ||
+            String(r.nombre_completo||'').toLowerCase().includes(q));
+  });
+
+  // Orden
+  FILTERED.sort((a,b)=>{
+    let va = a[sortKey]; let vb = b[sortKey];
+    if(sortKey === 'fecha'){ va = (a.fecha||''); vb = (b.fecha||''); }
+    if(typeof va === 'string') va = va.toLowerCase();
+    if(typeof vb === 'string') vb = vb.toLowerCase();
+    if(va < vb) return sortDir==='asc' ? -1 : 1;
+    if(va > vb) return sortDir==='asc' ? 1 : -1;
+    return 0;
+  });
+
+  const total = FILTERED.length;
+  const maxPage = Math.max(1, Math.ceil(total / pageSize));
+  if(page > maxPage) page = maxPage;
+
+  const start = (page-1)*pageSize;
+  const pageItems = FILTERED.slice(start, start+pageSize);
+
+  renderTabla(pageItems);
+  $('resume').textContent = `${total} resultado${total!==1?'s':''}`;
+  $('pageInfo').textContent = `${page} / ${maxPage}`;
 }
 
-function linkDoc(url, id){
-  return url ? `<a href="${url}" target="_blank">📎 Descargar</a>`
-             : `<a href="formularioweb.html?id=${id}">⬆️ Subir</a>`;
+/* ====== Render ====== */
+function renderSkeleton(){
+  const tbody = document.querySelector('#tabla tbody');
+  tbody.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const tr = document.createElement('tr');
+    tr.className = 'skeleton';
+    tr.innerHTML = '<td colspan="15"></td>';
+    tbody.appendChild(tr);
+  }
 }
-
 function renderTabla(lista){
-  const tbody = document.querySelector("#tabla tbody");
+  const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = "";
   if(!lista || lista.length===0){
     tbody.innerHTML = `<tr><td colspan="15">No se encontraron registros</td></tr>`;
@@ -205,8 +334,8 @@ function renderTabla(lista){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c.id}</td>
-      <td>${c.dni}</td>
-      <td>${c.nombre_completo}</td>
+      <td>${c.dni||''}</td>
+      <td>${c.nombre_completo||''}</td>
       <td>${c.sede || ''}</td>
       <td>${c.turno_horario || ''}</td>
       <td>${c.grupo || ''}</td>
@@ -219,7 +348,8 @@ function renderTabla(lista){
       <td>${linkDoc(c.capacitacion, c.id)}</td>
       <td>${linkDoc(c.cv, c.id)}</td>
       <td>
-        ${c.estado !== 'APROBADO' ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
+        ${c.estado !== 'APROBADO'
+          ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
         <a href="formularioweb.html?id=${c.id}">Editar</a>
       </td>
     `;
@@ -227,6 +357,98 @@ function renderTabla(lista){
   }
 }
 
+/* ====== Eventos UI ====== */
+document.querySelectorAll('.nav a').forEach(a=>{
+  const href=a.getAttribute('href');
+  if (href && location.pathname.endsWith(href)){
+    a.classList.add('active'); a.setAttribute('aria-current','page');
+  }
+});
+
+document.querySelectorAll('input[name="modo"]').forEach(r=>
+  r.addEventListener('change', applyModeDisable)
+);
+
+$('btnConsultar').addEventListener('click', consultar);
+$('btnLimpiar').addEventListener('click', ()=>{
+  $('filtroAno').value = "TODOS";
+  $('filtroMes').value = "TODOS";
+  $('filtroEstado').value = "";
+  $('grupoInicio').value = "";
+  $('grupoFin').value = "";
+  document.querySelector("input[name='modo'][value='fecha']").checked = true;
+  $('q').value = '';
+  page = 1;
+  clearMsg();
+  writeURL();
+  renderTabla([]);
+  $('resume').textContent = '0 resultados';
+  $('pageInfo').textContent = '1 / 1';
+  $('btnExport').disabled = true;
+});
+
+/* Quick search con debounce */
+let t = null;
+$('q').addEventListener('input', ()=>{
+  clearTimeout(t);
+  t = setTimeout(()=>{ page=1; applySearchSortPaginate(); writeURL(); }, 250);
+});
+
+/* Orden por columnas */
+document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
+  th.addEventListener('click', ()=>{
+    const key = th.dataset.key;
+    if(sortKey === key){ sortDir = (sortDir==='asc'?'desc':'asc'); }
+    else { sortKey = key; sortDir = (key==='fecha'?'desc':'asc'); }
+    document.querySelectorAll('#tabla thead th.sortable').forEach(x=>x.classList.remove('asc','desc'));
+    th.classList.add(sortDir);
+    page = 1;
+    applySearchSortPaginate();
+    writeURL();
+  });
+});
+
+/* Paginación */
+$('pageSize').addEventListener('change', ()=>{
+  pageSize = parseInt($('pageSize').value) || 25;
+  page = 1;
+  applySearchSortPaginate();
+  writeURL();
+});
+$('prevPage').addEventListener('click', ()=>{
+  if(page>1){ page--; applySearchSortPaginate(); writeURL(); }
+});
+$('nextPage').addEventListener('click', ()=>{
+  const maxPage = Math.max(1, Math.ceil(FILTERED.length / pageSize));
+  if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
+});
+
+/* Export CSV */
+$('btnExport').addEventListener('click', ()=>{
+  const rows = [
+    ['ID','DNI','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','Certificados','Antecedentes','Medicos','Capacitacion','CV']
+  ];
+  FILTERED.forEach(c=>{
+    rows.push([
+      c.id, c.dni||'', c.nombre_completo||'', c.sede||'', c.turno_horario||'',
+      c.grupo||'', c.estado||'', (c.fecha||'').slice(0,10),
+      c.dni||'', c.certificados||'', c.antecedentes||'', c.medicos||'', c.capacitacion||'', c.cv||''
+    ]);
+  });
+  const csv = rows.map(r=>r.map(v=>{
+    const s = String(v).replaceAll('"','""');
+    return `"${s}"`;
+  }).join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'candidatos.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+});
+
+/* Aprobar candidato (igual que tenías) */
 async function aprobar(id){
   if(!confirm("¿Marcar candidato como APROBADO?")) return;
   try{
@@ -241,34 +463,29 @@ async function aprobar(id){
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
     showMsg('ok', 'Candidato aprobado.');
-    consultar(); // recarga la tabla
+    await consultar(); // recarga
   }catch(e){
     console.error(e);
     showMsg('err', `Error al aprobar: ${e.message}`);
   }
 }
 
-// primera carga
-consultar();
-</script>
-<script>
-function closeMenu(){
-  document.body.classList.remove('menu-open');
-  document.getElementById('menuBtn').setAttribute('aria-expanded','false');
-}
+/* Menú móvil */
+function closeMenu(){ document.body.classList.remove('menu-open'); $('menuBtn').setAttribute('aria-expanded','false'); }
 document.addEventListener('DOMContentLoaded',()=>{
-  const btn=document.getElementById('menuBtn');
-  const backdrop=document.getElementById('backdrop');
-  btn?.addEventListener('click',()=>{
-    const open=document.body.classList.toggle('menu-open');
-    btn.setAttribute('aria-expanded',open);
-  });
+  const btn=$('menuBtn'); const backdrop=$('backdrop');
+  btn?.addEventListener('click',()=>{ const open=document.body.classList.toggle('menu-open'); btn.setAttribute('aria-expanded',open); });
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+
+  // inicial: lee URL -> consulta
+  readURL();
+  consultar();
 });
 </script>
 </body>
 </html>
+
 
 
 
