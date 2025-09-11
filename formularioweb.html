@@ -69,7 +69,6 @@
             <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
           </div>
 
-          <!-- Sede: combobox -->
           <!-- Sede -->
           <div class="field">
             <label for="sede_input">Sede</label>
@@ -82,7 +81,6 @@
             <div class="hint">Selecciona una de la lista</div>
           </div>
 
-          <!-- Turno: combobox -->
           <!-- Turno -->
           <div class="field">
             <label for="turno_input">Turno</label>
@@ -92,8 +90,9 @@
               <input id="turno_horario" name="turno_horario" type="hidden" />
               <ul id="turno_listbox" class="combo-list" role="listbox"></ul>
             </div>
-            <div class="hint">Ej: Manana (08:00-16:00)</div>
+            <div class="hint">Ej: Mañana (08:00–16:00)</div>
           </div>
+        </div> <!-- ✅ Cierre de .form-grid que faltaba -->
 
         <!-- Archivos -->
         <details class="fold" open>
@@ -177,7 +176,7 @@ document.querySelectorAll('.nav a').forEach(a=>{
 function showMsg(type, text){ const box=document.getElementById('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function fmtSize(b){ return b<1024?`${b} B`:b<1048576?`${(b/1024).toFixed(1)} KB`:`${(b/1048576).toFixed(1)} MB`; }
 
-/* dropzones (igual que siempre) */
+/* dropzones */
 function initDropzone({inputId, dropId, listId, multiple=true}){
   const input=document.getElementById(inputId), drop=document.getElementById(dropId), list=document.getElementById(listId);
   input._dt=new DataTransfer();
@@ -195,7 +194,7 @@ function initDropzone({inputId, dropId, listId, multiple=true}){
     li.innerHTML=`<span class="truncate" title="${f.name}">${f.name}</span><span class="small">${fmtSize(f.size)}</span>`;
     const btn=document.createElement('button'); btn.type='button'; btn.textContent='Quitar'; btn.className='chip';
     btn.addEventListener('click',()=>removeAt(i)); li.appendChild(btn); list.appendChild(li); }); }
-  return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML:''; } };
+  return { clear:()=>{ input._dt=new DataTransfer(); input.files=input._dt.files; list.innerHTML=''; } };
 }
 const dzDni=initDropzone({inputId:'dniInput',dropId:'dniDrop',listId:'dniList',multiple:true});
 const dzCertificados=initDropzone({inputId:'certificadosInput',dropId:'certificadosDrop',listId:'certificadosList',multiple:true});
@@ -210,7 +209,7 @@ const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 const SITES = `${API_BASE}/api/sites`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
-/* ===== Combobox genérico ===== */
+/* Combobox genérico (versión robusta) */
 function createCombobox(opts) {
   var input   = document.getElementById(opts.inputId);
   var list    = document.getElementById(opts.listboxId);
@@ -256,7 +255,6 @@ function createCombobox(opts) {
     setOpen(false);
   }
 
-  // Eventos
   input.addEventListener("focus", function(){ render(); setOpen(true); });
   input.addEventListener("click", function(){ render(); setOpen(!open); });
   input.addEventListener("input", function(){ activeIndex=-1; render(); setOpen(true); });
@@ -303,7 +301,6 @@ function createCombobox(opts) {
   };
 }
 
-
 /* Combos de Sede y Turno */
 let cbSede, cbTurno;
 
@@ -312,7 +309,7 @@ async function populateSites(){
     const r = await fetch(SITES);
     const data = r.ok ? await r.json() : [];
     const items = data.map(s=>({ id:s.id, code:s.code, name:s.name || s.code || '' }));
-    cbSede?.updateItems(items);
+    if (cbSede) cbSede.updateItems(items);
   }catch(e){ console.error(e); }
 }
 async function populateShifts(){
@@ -323,7 +320,7 @@ async function populateShifts(){
       const label = (sh.start_time && sh.end_time) ? `${sh.name} (${sh.start_time}–${sh.end_time})` : (sh.name || '');
       return { id:sh.id, name:sh.name || '', label };
     });
-    cbTurno?.updateItems(items);
+    if (cbTurno) cbTurno.updateItems(items);
   }catch(e){ console.error(e); }
 }
 
@@ -384,6 +381,8 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
+
 
 
 
