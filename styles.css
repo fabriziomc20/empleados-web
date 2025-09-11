@@ -35,8 +35,9 @@ body{
 .nav a.active{background:var(--brand);color:#fff;}
 .nav a:hover{background:#e5e7eb;}
 .sep{height:1px;background:#e5e7eb;margin:12px 0;}
+
 /* ── Títulos de sección del sidebar (mejor jerarquía) ── */
-.caption {
+.caption{
   font-size:13px;
   font-weight:600;
   text-transform:uppercase;
@@ -46,8 +47,7 @@ body{
   position:relative;
   padding-top:8px;   /* espaciado extra */
 }
-
-.caption::before {
+.caption::before{
   content:"";
   display:block;
   height:1px;
@@ -58,7 +58,6 @@ body{
   right:0;
 }
 
-}
 .main{flex:1;padding:20px;}
 .card{
   background:var(--panel);
@@ -252,20 +251,22 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   background:#fff;
   color:var(--text);
   font-size:14px;
+  padding-right:32px; /* espacio para caret */
 }
 .combo-list{
   position:absolute;
-  inset:auto 0 auto 0;
+  left:0;
+  right:0;
   top:calc(100% + 4px);
   background:#fff;
   border:1px solid #e5e7eb;
   border-radius:10px;
   box-shadow:0 8px 20px rgba(0,0,0,.08);
-  max-height:220px;
+  max-height:260px;
   overflow:auto;
   padding:6px;
   display:none;
-  z-index:80;
+  z-index:200; /* asegura que no quede debajo de otras capas */
 }
 .combo-opt{
   padding:8px 10px;
@@ -280,14 +281,31 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
   color:#6b7280;
   font-size:13px;
 }
+/* Botón caret del combobox */
+.combo-toggle{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:none;
+  cursor:pointer;
+  padding:4px;
+  line-height:1;
+  color:#6b7280;
+  border-radius:8px;
+}
+.combo-toggle:focus-visible{ outline:2px solid var(--brand); outline-offset:2px; }
 
 /* Pequeñas mejoras responsivas */
 @media (max-width:520px){
   .field input, .field select { font-size:13.5px; padding:8px; }
   .drop { font-size:13.5px; padding:8px; }
 }
+
 /* Evita doble línea antes de los títulos de sección */
-.nav .sep + .caption::before { display: none; }         /* si hay .sep antes, no dibujar otra línea */
-.nav .caption:first-of-type::before { display: none; }  /* la primera caption no necesita línea arriba */
+.nav .sep + .caption::before { display: none; }
+.nav .caption:first-of-type::before { display: none; }
+
 
 
