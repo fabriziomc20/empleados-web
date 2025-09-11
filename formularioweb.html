@@ -70,10 +70,12 @@
           </div>
 
           <!-- Sede: combobox -->
+          <!-- Sede -->
           <div class="field">
             <label for="sede_input">Sede</label>
             <div class="combo" role="combobox" aria-expanded="false" aria-owns="sede_listbox" aria-haspopup="listbox">
-              <input id="sede_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="sede_listbox" autocomplete="off" />
+              <input id="sede_input" class="combo-input" type="text" placeholder="Escribe para filtrar..." aria-autocomplete="list" aria-controls="sede_listbox" autocomplete="off" />
+              <button type="button" class="combo-toggle" aria-label="Mostrar/ocultar opciones" data-toggle="sede_listbox">▾</button>
               <input id="sede" name="sede" type="hidden" />
               <ul id="sede_listbox" class="combo-list" role="listbox"></ul>
             </div>
@@ -81,16 +83,17 @@
           </div>
 
           <!-- Turno: combobox -->
+          <!-- Turno -->
           <div class="field">
             <label for="turno_input">Turno</label>
             <div class="combo" role="combobox" aria-expanded="false" aria-owns="turno_listbox" aria-haspopup="listbox">
-              <input id="turno_input" class="combo-input" type="text" placeholder="Escribe para filtrar…" aria-autocomplete="list" aria-controls="turno_listbox" autocomplete="off" />
+              <input id="turno_input" class="combo-input" type="text" placeholder="Escribe para filtrar..." aria-autocomplete="list" aria-controls="turno_listbox" autocomplete="off" />
+              <button type="button" class="combo-toggle" aria-label="Mostrar/ocultar opciones" data-toggle="turno_listbox">▾</button>
               <input id="turno_horario" name="turno_horario" type="hidden" />
               <ul id="turno_listbox" class="combo-list" role="listbox"></ul>
             </div>
-            <div class="hint">Ej: Mañana (08:00–16:00)</div>
+            <div class="hint">Ej: Manana (08:00-16:00)</div>
           </div>
-        </div>
 
         <!-- Archivos -->
         <details class="fold" open>
@@ -208,66 +211,98 @@ const SITES = `${API_BASE}/api/sites`;
 const SHIFTS = `${API_BASE}/api/shifts`;
 
 /* ===== Combobox genérico ===== */
-function createCombobox({inputId, listboxId, hiddenId, items, toLabel, toValue}) {
-  const input = document.getElementById(inputId);
-  const list = document.getElementById(listboxId);
-  const hidden = document.getElementById(hiddenId);
-  const combo = input?.closest('.combo');
+function createCombobox(opts) {
+  var input   = document.getElementById(opts.inputId);
+  var list    = document.getElementById(opts.listboxId);
+  var hidden  = document.getElementById(opts.hiddenId);
+  var combo   = input ? input.closest(".combo") : null;
+  var toggle  = combo ? combo.querySelector(".combo-toggle") : null;
 
-  let open = false;
-  let activeIndex = -1;
-  let curItems = items.slice();
+  var open = false;
+  var activeIndex = -1;
+  var allItems = Array.isArray(opts.items) ? opts.items.slice() : [];
+  var curItems = allItems.slice();
 
   function setOpen(v){
-    open = v;
-    combo?.setAttribute('aria-expanded', v ? 'true' : 'false');
-    list.style.display = v ? 'block' : 'none';
+    open = !!v;
+    if (combo) combo.setAttribute("aria-expanded", open ? "true" : "false");
+    if (list)  list.style.display = open ? "block" : "none";
   }
+
+  function toLabel(it){ return (opts.toLabel ? String(opts.toLabel(it)) : String(it)); }
+  function toValue(it){ return (opts.toValue ? String(opts.toValue(it)) : String(it)); }
+
   function render(){
-    const q = (input.value || '').toLowerCase().trim();
-    curItems = items.filter(it => toLabel(it).toLowerCase().includes(q));
-    list.innerHTML = curItems.map((it, i) =>
-      `<li role="option" id="${listboxId}_opt_${i}" class="combo-opt${i===activeIndex?' is-active':''}">${toLabel(it)}</li>`
-    ).join('') || `<li class="combo-empty">Sin resultados</li>`;
+    var q = (input.value || "").toLowerCase().trim();
+    curItems = allItems.filter(function(it){ return toLabel(it).toLowerCase().indexOf(q) !== -1; });
+
+    if (curItems.length === 0) {
+      list.innerHTML = '<li class="combo-empty">Sin resultados</li>';
+      return;
+    }
+
+    var html = "";
+    for (var i=0; i<curItems.length; i++){
+      var isAct = (i === activeIndex) ? " is-active" : "";
+      html += '<li role="option" id="' + opts.listboxId + '_opt_' + i + '" class="combo-opt' + isAct + '">' +
+              toLabel(curItems[i]) + '</li>';
+    }
+    list.innerHTML = html;
   }
+
   function commit(it){
-    input.value = toLabel(it);
+    input.value  = toLabel(it);
     hidden.value = toValue(it);
     setOpen(false);
   }
 
-  input.addEventListener('focus', ()=>{ render(); setOpen(true); });
-  input.addEventListener('input', ()=>{ activeIndex=-1; render(); setOpen(true); });
-  input.addEventListener('keydown', (e)=>{
-    if(!open && (e.key==='ArrowDown' || e.key==='Enter')) { render(); setOpen(true); return; }
-    if(e.key==='ArrowDown'){ activeIndex = Math.min(activeIndex+1, curItems.length-1); render(); e.preventDefault(); }
-    if(e.key==='ArrowUp'){ activeIndex = Math.max(activeIndex-1, 0); render(); e.preventDefault(); }
-    if(e.key==='Enter'){
+  // Eventos
+  input.addEventListener("focus", function(){ render(); setOpen(true); });
+  input.addEventListener("click", function(){ render(); setOpen(!open); });
+  input.addEventListener("input", function(){ activeIndex=-1; render(); setOpen(true); });
+
+  input.addEventListener("keydown", function(e){
+    if(!open && (e.key === "ArrowDown" || e.key === "Enter")) { render(); setOpen(true); return; }
+    if(e.key === "ArrowDown"){ if(curItems.length){ activeIndex = Math.min(activeIndex+1, curItems.length-1); render(); } e.preventDefault(); }
+    if(e.key === "ArrowUp"){ if(curItems.length){ activeIndex = Math.max(activeIndex-1, 0); render(); } e.preventDefault(); }
+    if(e.key === "Enter"){
       if(open && curItems[activeIndex]){ commit(curItems[activeIndex]); e.preventDefault(); }
       else setOpen(false);
     }
-    if(e.key==='Escape'){ setOpen(false); }
+    if(e.key === "Escape"){ setOpen(false); }
   });
-  list.addEventListener('mousedown', (e)=>{
-    const li = e.target.closest('li[role="option"]'); if(!li) return;
-    const i = Array.from(list.children).indexOf(li);
+
+  list.addEventListener("mousedown", function(e){
+    var li = e.target.closest('li[role="option"]');
+    if(!li) return;
+    var i = Array.prototype.indexOf.call(list.children, li);
     if(i>=0 && curItems[i]) commit(curItems[i]);
   });
-  document.addEventListener('click', (e)=>{
-    if(!combo.contains(e.target)) setOpen(false);
+
+  if (toggle){
+    toggle.addEventListener("click", function(e){
+      e.stopPropagation();
+      if (list.style.display !== "block") { render(); }
+      setOpen(list.style.display !== "block");
+      input.focus();
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    if(combo && !combo.contains(e.target)) setOpen(false);
   });
 
-  render();
-  setOpen(false);
-
   return {
-    updateItems(newItems){ items = newItems || []; render(); },
-    setValueByLabel(lbl){
-      const it = items.find(x => toLabel(x) === lbl);
-      if(it) commit(it);
+    updateItems: function(newItems){
+      allItems = Array.isArray(newItems) ? newItems.slice() : [];
+      if (allItems.length === 0){
+        list.innerHTML = '<li class="combo-empty">Sin resultados</li>';
+        setOpen(false);
+      }
     }
   };
 }
+
 
 /* Combos de Sede y Turno */
 let cbSede, cbTurno;
@@ -349,6 +384,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
