@@ -206,6 +206,7 @@ function writeURL(){
   const q = $('q').value.trim();
 
   u.searchParams.set('modo', modo);
+  // Guardamos lo que el usuario ve, pero la llamada a API evita TODOS (ver consultar()).
   u.searchParams.set('ano', ano);
   u.searchParams.set('mes', mes);
   u.searchParams.set('estado', estado);
@@ -247,8 +248,9 @@ async function consultar(){
       showMsg('err', "Si seleccionas un mes específico, el año no puede ser TODOS.");
       return;
     }
-    url.searchParams.set("ano", ano);
-    url.searchParams.set("mes", mes);
+    // FIX: no enviar 'TODOS' al backend
+    if (ano !== "TODOS") url.searchParams.set("ano", ano);
+    if (mes !== "TODOS") url.searchParams.set("mes", mes);
   } else {
     const ini = $('grupoInicio').value.trim();
     const fin = $('grupoFin').value.trim();
@@ -292,7 +294,13 @@ function applySearchSortPaginate(){
   // Orden
   FILTERED.sort((a,b)=>{
     let va = a[sortKey]; let vb = b[sortKey];
-    if(sortKey === 'fecha'){ va = (a.fecha||''); vb = (b.fecha||''); }
+
+    // FIX: normalizar fecha por si el backend usa otro nombre
+    if (sortKey === 'fecha') {
+      va = (a.fecha || a.created_at || a.createdAt || '');
+      vb = (b.fecha || b.created_at || b.createdAt || '');
+    }
+
     if(typeof va === 'string') va = va.toLowerCase();
     if(typeof vb === 'string') vb = vb.toLowerCase();
     if(va < vb) return sortDir==='asc' ? -1 : 1;
@@ -331,6 +339,7 @@ function renderTabla(lista){
     return;
   }
   for(const c of lista){
+    const fechaNorm = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c.id}</td>
@@ -340,7 +349,7 @@ function renderTabla(lista){
       <td>${c.turno_horario || ''}</td>
       <td>${c.grupo || ''}</td>
       <td>${tagEstado(c.estado)}</td>
-      <td>${(c.fecha||'').slice(0,10)}</td>
+      <td>${fechaNorm}</td>
       <td>${linkDoc(c.dni, c.id)}</td>
       <td>${linkDoc(c.certificados, c.id)}</td>
       <td>${linkDoc(c.antecedentes, c.id)}</td>
@@ -431,7 +440,7 @@ $('btnExport').addEventListener('click', ()=>{
   FILTERED.forEach(c=>{
     rows.push([
       c.id, c.dni||'', c.nombre_completo||'', c.sede||'', c.turno_horario||'',
-      c.grupo||'', c.estado||'', (c.fecha||'').slice(0,10),
+      c.grupo||'', c.estado||'', (c.fecha || c.created_at || c.createdAt || '').slice(0,10),
       c.dni||'', c.certificados||'', c.antecedentes||'', c.medicos||'', c.capacitacion||'', c.cv||''
     ]);
   });
@@ -448,7 +457,7 @@ $('btnExport').addEventListener('click', ()=>{
   a.remove();
 });
 
-/* Aprobar candidato (igual que tenías) */
+/* Aprobar candidato */
 async function aprobar(id){
   if(!confirm("¿Marcar candidato como APROBADO?")) return;
   try{
@@ -485,6 +494,8 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
+
 
 
 
