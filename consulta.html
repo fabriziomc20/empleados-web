@@ -25,7 +25,7 @@
   .pagerbar .right{display:flex;gap:10px;align-items:center}
   .muted{color:#6b7280;font-size:12.5px}
 
-  /* NEW: Modal de documentos (usa el mismo patrón visual de styles.css) */
+  /* Modal de documentos */
   .docs-modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:100}
   .docs-modal{background:#fff;border-radius:14px;max-width:720px;width:92%;max-height:80vh;overflow:auto;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
   .docs-modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
@@ -135,7 +135,7 @@
             <th class="sortable" data-key="estado">Estado</th>
             <th class="sortable" data-key="fecha">Fecha</th>
 
-            <!-- ⬇️ SIMPLIFICACIÓN DE COLUMNAS DE DOCUMENTOS -->
+            <!-- Columnas simplificadas de documentos -->
             <th>DNI</th>
             <th>Curriculum – CV</th>
             <th>Documentos</th>
@@ -165,7 +165,7 @@
   </div>
 </main>
 
-<!-- NEW: Modal de documentos -->
+<!-- Modal de documentos -->
 <div id="docsBackdrop" class="docs-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="docsTitle">
   <div class="docs-modal">
     <header>
@@ -173,20 +173,21 @@
       <button class="secondary" id="docsClose">Cerrar</button>
     </header>
     <div id="docsMeta" class="small" style="margin-bottom:8px;color:#6b7280"></div>
-    <ul class="doc-list" id="docsList">
-      <!-- se llena por JS -->
-    </ul>
+    <ul class="doc-list" id="docsList"></ul>
   </div>
 </div>
+
+<!-- Input de archivo reutilizable para Subir/Reemplazar -->
+<input id="docFileInput" type="file" style="display:none" />
 
 <script>
 /* ====== Config / Helpers ====== */
 const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
-// Si en el futuro expones endpoints para actualizar/eliminar documentos desde aquí,
-// cambia a true y completa las URLs en upload/delete dentro de renderDocsModal().
-const ENABLE_DIRECT_DOC_API = false; // NEW: bandera de seguridad
+/* Si más adelante expones endpoints para subir/borrar desde aquí,
+   activa esto y completa uploadDocument/deleteDoc. */
+const ENABLE_DIRECT_DOC_API = false;
 
 const $ = (id)=>document.getElementById(id);
 function showMsg(type, text){ const box=$('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
@@ -196,7 +197,6 @@ function tagEstado(estado){
   if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
   return `<span class="tag rev">En revisión</span>`;
 }
-function linkSimple(url, text){ return `<a class="btn-link" href="${url}" target="_blank" rel="noopener">${text}</a>`; }
 
 /* ====== Estado de UI / Resultados ====== */
 let RAW = [];
@@ -256,7 +256,7 @@ function applyModeDisable(){
   ['grupoInicio','grupoFin'].forEach(id=>{ $(id).disabled = byFecha; });
 }
 
-/* ====== Fetch (con esqueleto y estado de botón) ====== */
+/* ====== Fetch ====== */
 function renderSkeleton(){
   const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = '';
@@ -376,22 +376,13 @@ function renderTabla(lista){
 
     const dniBtn = c.dni
       ? `<a class="btn-link" href="${c.dni}" target="_blank" rel="noopener">Abrir</a>`
-      : `<a class="btn-link" href="formularioweb.html?id=${c.id}" target="_blank" rel="noopener">Subir</a>`;
+      : `<button class="btn-link" onclick="openDocsModal(${c.id})">Subir…</button>`;
 
     const cvBtn = c.cv
       ? `<a class="btn-link" href="${c.cv}" target="_blank" rel="noopener">Abrir</a>`
-      : `<a class="btn-link" href="formularioweb.html?id=${c.id}" target="_blank" rel="noopener">Subir</a>`;
+      : `<button class="btn-link" onclick="openDocsModal(${c.id})">Subir…</button>`;
 
-    const docsBtn = `<button class="btn-link primary" onclick='openDocsModal(${JSON.stringify({
-      id:c.id,
-      nombre:c.nombre_completo||'',
-      dniDoc: c.dni||'',
-      certificados: c.certificados||'',
-      antecedentes: c.antecedentes||'',
-      medicos: c.medicos||'',
-      capacitacion: c.capacitacion||'',
-      cv: c.cv||''
-    }).replace(/"/g,'&quot;')})'>Ver</button>`;
+    const docsBtn = `<button class="btn-link primary" onclick="openDocsModal(${c.id})">Ver</button>`;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -420,39 +411,47 @@ function renderTabla(lista){
 }
 
 /* ====== Modal de Documentos ====== */
-// NEW: abre el modal pasando un objeto con las URLs
-window.openDocsModal = function(candidate){
-  const bd = $('docsBackdrop');
-  const title = $('docsTitle');
-  const meta = $('docsMeta');
-  const ul = $('docsList');
+let CURRENT_CANDIDATE = null;
+function docItemsFromCandidate(c){
+  return [
+    { key:'dni',          label:'DNI',                 url:c?.dni||'',           accept:'.pdf,.jpg,.jpeg,.png' },
+    { key:'certificados', label:'Certificados',       url:c?.certificados||'',  accept:'.pdf,.jpg,.jpeg,.png' },
+    { key:'antecedentes', label:'Antecedentes',       url:c?.antecedentes||'',  accept:'.pdf,.jpg,.jpeg,.png' },
+    { key:'medicos',      label:'Documentos Médicos', url:c?.medicos||'',       accept:'.pdf,.jpg,.jpeg,.png' },
+    { key:'capacitacion', label:'Capacitación',       url:c?.capacitacion||'',  accept:'.pdf,.jpg,.jpeg,.png' },
+    { key:'cv',           label:'Curriculum – CV',    url:c?.cv||'',            accept:'.pdf,.doc,.docx' }
+  ];
+}
 
-  title.textContent = `Documentos – ID ${candidate.id}`;
-  meta.textContent = candidate.nombre ? candidate.nombre : '';
+window.openDocsModal = function(id){
+  // Busca el candidato en los datos cargados
+  const cand = RAW.find(x=>String(x.id)===String(id)) || FILTERED.find(x=>String(x.id)===String(id));
+  if(!cand){ showMsg('err','No se encontró el candidato'); return; }
+  CURRENT_CANDIDATE = cand;
+
+  const bd   = $('docsBackdrop');
+  const meta = $('docsMeta');
+  const ul   = $('docsList');
+  const title= $('docsTitle');
+
+  title.textContent = `Documentos – ID ${cand.id}`;
+  meta.textContent  = cand.nombre_completo || '';
   ul.innerHTML = '';
 
-  const items = [
-    { key:'dniDoc', label:'DNI', url:candidate.dniDoc },
-    { key:'certificados', label:'Certificados', url:candidate.certificados },
-    { key:'antecedentes', label:'Antecedentes', url:candidate.antecedentes },
-    { key:'medicos', label:'Documentos Médicos', url:candidate.medicos },
-    { key:'capacitacion', label:'Capacitación', url:candidate.capacitacion },
-    { key:'cv', label:'Curriculum – CV', url:candidate.cv },
-  ];
-
+  const items = docItemsFromCandidate(cand);
   for(const it of items){
-    const li = document.createElement('li');
     const has = !!it.url;
+    const li = document.createElement('li');
     li.innerHTML = `
       <span class="doc-name">${it.label}</span>
       ${has ? '<span class="doc-ok">Disponible</span>' : '<span class="doc-missing">No cargado</span>'}
       <div class="doc-actions">
         ${has ? `<a class="btn-link" href="${it.url}" target="_blank" rel="noopener">Abrir</a>` : ''}
-        <a class="btn-link" href="formularioweb.html?id=${candidate.id}" target="_blank" rel="noopener">Subir/Reemplazar</a>
-        ${ENABLE_DIRECT_DOC_API
-          ? `<button class="btn-link danger" onclick="deleteDoc(${candidate.id}, '${it.key}')">Eliminar</button>`
-          : `<button class="btn-link danger" disabled title="Desactivado para no romper la API">Eliminar</button>`
-        }
+        <button class="btn-link primary" data-key="${it.key}" data-accept="${it.accept}">
+          ${has ? 'Reemplazar…' : 'Subir…'}
+        </button>
+        <button class="btn-link danger" ${ENABLE_DIRECT_DOC_API ? '' : 'disabled title="Desactivado para no romper la API"' }
+                data-del="${it.key}">Eliminar</button>
       </div>
     `;
     ul.appendChild(li);
@@ -460,22 +459,73 @@ window.openDocsModal = function(candidate){
 
   bd.style.display = 'flex';
 };
+
 $('docsClose').addEventListener('click', ()=> $('docsBackdrop').style.display='none');
 $('docsBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='docsBackdrop') e.currentTarget.style.display='none'; });
 
-// Opcional: stubs de carga/borrado directos si activas ENABLE_DIRECT_DOC_API
+/* Click en Subir… / Reemplazar… (abre file picker) */
+document.getElementById('docsList').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-key]');
+  if(!btn) return;
+  const key = btn.getAttribute('data-key');
+  const accept = btn.getAttribute('data-accept') || '*/*';
+  const fileInput = $('docFileInput');
+  fileInput.value = '';
+  fileInput.setAttribute('accept', accept);
+  fileInput.dataset.key = key;
+  fileInput.dataset.candidateId = CURRENT_CANDIDATE?.id || '';
+  fileInput.click();
+});
+
+/* Selección de archivo -> subir */
+$('docFileInput').addEventListener('change', async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  const key = e.target.dataset.key;
+  const id  = e.target.dataset.candidateId;
+  try{
+    await uploadDocument(id, key, file);
+    showMsg('ok','Archivo listo para subir (demo). Conecta el endpoint para completar.');
+  }catch(err){
+    showMsg('err', err.message || 'Error al subir');
+  }finally{
+    $('docsBackdrop').style.display='none';
+    consultar(); // refresca listado
+  }
+});
+
+/* (Stub) Subida directa — completa cuando tengas endpoint */
+async function uploadDocument(id, key, file){
+  if(!ENABLE_DIRECT_DOC_API){
+    // Aquí NO hacemos nada para no romper. Solo informamos.
+    // Cuando tengas el endpoint:
+    // const fd = new FormData(); fd.append(key, file);
+    // const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'POST', body: fd });
+    // if(!res.ok) throw new Error('No se pudo subir');
+    return Promise.resolve();
+  }
+  // Ejemplo de implementación real (ajusta la URL y método a tu backend):
+  const fd = new FormData();
+  fd.append(key, file);
+  const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'POST', body: fd });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> '');
+    throw new Error(`Error HTTP ${res.status} ${txt}`);
+  }
+}
+
+/* (Stub) Eliminar documento — completa cuando tengas endpoint */
 async function deleteDoc(id, key){
   if(!ENABLE_DIRECT_DOC_API) return;
   if(!confirm('¿Eliminar este documento?')) return;
-  try{
-    // TODO: ajusta la URL de borrado cuando tu backend lo soporte
-    // const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'DELETE' });
-    // if(!res.ok) throw new Error('No se pudo eliminar');
-    showMsg('ok','(Demo) Documento eliminado'); // quita esto cuando conectes la API
+  const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'DELETE' });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> '');
+    showMsg('err', `No se pudo eliminar (${res.status}) ${txt}`);
+  }else{
+    showMsg('ok','Documento eliminado');
     $('docsBackdrop').style.display='none';
     consultar();
-  }catch(e){
-    showMsg('err', e.message);
   }
 }
 
@@ -619,6 +669,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
