@@ -50,7 +50,7 @@
         <div class="form-grid">
           <div class="field">
             <label for="dni">DNI</label>
-            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="8" required placeholder="00000000" aria-describedby="dniHint" />
+            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="10" required placeholder="00000000" aria-describedby="dniHint" />
             <div id="dniHint" class="hint">Debe tener <strong>8 dígitos</strong>.</div>
           </div>
 
@@ -336,7 +336,7 @@ const form = document.getElementById('formEmpleado');
 const submitBtn = document.getElementById('btnSubmit');
 
 function sanitizeDNI(v){
-  return (v || '').replace(/\D+/g,'').slice(0,8);
+  return (v || '').replace(/\D+/g,'').slice(0,10);
 }
 function updateDNIState(){
   const v = sanitizeDNI(dniEl.value);
@@ -449,6 +449,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
