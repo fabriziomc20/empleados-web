@@ -24,6 +24,20 @@
   .pagerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
   .pagerbar .right{display:flex;gap:10px;align-items:center}
   .muted{color:#6b7280;font-size:12.5px}
+
+  /* NEW: Modal de documentos (usa el mismo patrón visual de styles.css) */
+  .docs-modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:100}
+  .docs-modal{background:#fff;border-radius:14px;max-width:720px;width:92%;max-height:80vh;overflow:auto;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+  .docs-modal header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px}
+  .doc-list{list-style:none;margin:0;padding:0}
+  .doc-list li{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;border:1px solid #e5e7eb;border-radius:10px;padding:10px;background:#fff;margin:8px 0}
+  .doc-name{font-weight:600}
+  .doc-missing{color:#7f1d1d;background:#fee2e2;border-radius:999px;padding:2px 8px;font-size:12px;justify-self:start}
+  .doc-ok{color:#14532d;background:#dcfce7;border-radius:999px;padding:2px 8px;font-size:12px;justify-self:start}
+  .doc-actions{display:flex;gap:8px}
+  .btn-link{background:#e5e7eb;color:#111827;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;text-decoration:none;display:inline-block}
+  .btn-link.primary{background:#2563eb;color:#fff}
+  .btn-link.danger{background:#fee2e2;color:#7f1d1d}
 </style>
 </head>
 <body>
@@ -120,12 +134,12 @@
             <th class="sortable" data-key="grupo">Grupo</th>
             <th class="sortable" data-key="estado">Estado</th>
             <th class="sortable" data-key="fecha">Fecha</th>
-            <th>DNI Doc</th>
-            <th>Certif.</th>
-            <th>Anteced.</th>
-            <th>Médicos</th>
-            <th>Capacit.</th>
-            <th>CV</th>
+
+            <!-- ⬇️ SIMPLIFICACIÓN DE COLUMNAS DE DOCUMENTOS -->
+            <th>DNI</th>
+            <th>Curriculum – CV</th>
+            <th>Documentos</th>
+
             <th>Acciones</th>
           </tr>
         </thead>
@@ -151,10 +165,28 @@
   </div>
 </main>
 
+<!-- NEW: Modal de documentos -->
+<div id="docsBackdrop" class="docs-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="docsTitle">
+  <div class="docs-modal">
+    <header>
+      <h3 id="docsTitle">Documentos</h3>
+      <button class="secondary" id="docsClose">Cerrar</button>
+    </header>
+    <div id="docsMeta" class="small" style="margin-bottom:8px;color:#6b7280"></div>
+    <ul class="doc-list" id="docsList">
+      <!-- se llena por JS -->
+    </ul>
+  </div>
+</div>
+
 <script>
-/* ====== Helpers básicos ====== */
+/* ====== Config / Helpers ====== */
 const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
+
+// Si en el futuro expones endpoints para actualizar/eliminar documentos desde aquí,
+// cambia a true y completa las URLs en upload/delete dentro de renderDocsModal().
+const ENABLE_DIRECT_DOC_API = false; // NEW: bandera de seguridad
 
 const $ = (id)=>document.getElementById(id);
 function showMsg(type, text){ const box=$('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
@@ -164,24 +196,20 @@ function tagEstado(estado){
   if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
   return `<span class="tag rev">En revisión</span>`;
 }
-function linkDoc(url, id){
-  return url ? `<a href="${url}" target="_blank" rel="noopener">📎 Descargar</a>`
-             : `<a href="formularioweb.html?id=${id}">⬆️ Subir</a>`;
-}
+function linkSimple(url, text){ return `<a class="btn-link" href="${url}" target="_blank" rel="noopener">${text}</a>`; }
 
 /* ====== Estado de UI / Resultados ====== */
-let RAW = [];            // resultados crudos
-let FILTERED = [];       // tras búsqueda y orden
+let RAW = [];
+let FILTERED = [];
 let page = 1;
 let pageSize = 25;
 let sortKey = 'fecha';
-let sortDir = 'desc';    // 'asc' | 'desc'
+let sortDir = 'desc';
 
-/* ====== URL <-> Estado (deep link) ====== */
+/* ====== URL <-> Estado ====== */
 function readURL(){
   const u = new URL(location.href);
   const get = (k,def='') => u.searchParams.get(k) ?? def;
-
   const modo = get('modo','fecha');
   document.querySelector(`input[name="modo"][value="${modo}"]`).checked = true;
   $('filtroAno').value = get('ano','TODOS');
@@ -191,15 +219,10 @@ function readURL(){
   $('grupoFin').value = get('gfin','');
   $('q').value = get('q','');
   page = parseInt(get('p','1')) || 1;
-
-  // Preferencia pageSize desde URL o localStorage
   pageSize = parseInt(get('ps', localStorage.getItem('consulta:ps') || '25')) || 25;
   $('pageSize').value = String(pageSize);
-
-  // Orden desde URL
   sortKey = get('sk','fecha');
   sortDir = get('sd','desc');
-
   applyModeDisable();
 }
 function writeURL(){
@@ -211,7 +234,6 @@ function writeURL(){
   const gini = $('grupoInicio').value.trim();
   const gfin = $('grupoFin').value.trim();
   const q = $('q').value.trim();
-
   u.searchParams.set('modo', modo);
   u.searchParams.set('ano', ano);
   u.searchParams.set('mes', mes);
@@ -226,16 +248,25 @@ function writeURL(){
   history.replaceState(null, '', u.toString());
 }
 
-/* ====== Filtros (habilitar/deshabilitar campos) ====== */
+/* ====== Filtros ====== */
 function applyModeDisable(){
   const modo = document.querySelector('input[name="modo"]:checked').value;
   const byFecha = (modo === 'fecha');
-
   ['filtroAno','filtroMes','filtroEstado'].forEach(id=>{ $(id).disabled = !byFecha; });
   ['grupoInicio','grupoFin'].forEach(id=>{ $(id).disabled = byFecha; });
 }
 
-/* ====== Fetch de datos ====== */
+/* ====== Fetch (con esqueleto y estado de botón) ====== */
+function renderSkeleton(){
+  const tbody = document.querySelector('#tabla tbody');
+  tbody.innerHTML = '';
+  for(let i=0;i<6;i++){
+    const tr = document.createElement('tr');
+    tr.className = 'skeleton';
+    tr.innerHTML = '<td colspan="12"></td>';
+    tbody.appendChild(tr);
+  }
+}
 async function consultar(){
   clearMsg();
   applyModeDisable();
@@ -262,7 +293,6 @@ async function consultar(){
   }
   if (estado) url.searchParams.set("estado", estado);
 
-  // Skeleton + estado de botón
   renderSkeleton();
   const btn = $('btnConsultar'); const old = btn.textContent;
   btn.disabled = true; btn.textContent = 'Consultando…';
@@ -275,7 +305,7 @@ async function consultar(){
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
     RAW = await res.json();
-    page = 1; // reset página en cada consulta
+    page = 1;
     applySearchSortPaginate();
     if (RAW.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
     $('btnExport').disabled = RAW.length === 0;
@@ -288,16 +318,15 @@ async function consultar(){
   }
 }
 
-/* ====== Búsqueda tolerante + orden + paginación ====== */
+/* ====== Buscar + Orden + Paginación ====== */
 function applySearchSortPaginate(){
   const terms = $('q').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   FILTERED = RAW.filter(r=>{
     if(!terms.length) return true;
     const hay = (String(r.dni||'') + ' ' + String(r.nombre_completo||'')).toLowerCase();
-    return terms.every(t => hay.includes(t)); // AND de términos
+    return terms.every(t => hay.includes(t));
   });
 
-  // Orden
   FILTERED.sort((a,b)=>{
     let va = a[sortKey]; let vb = b[sortKey];
     if (sortKey === 'fecha') { va = (a.fecha || a.created_at || a.createdAt || ''); vb = (b.fecha || b.created_at || b.createdAt || ''); }
@@ -319,7 +348,6 @@ function applySearchSortPaginate(){
   $('resume').textContent = `${total} resultado${total!==1?'s':''}`;
   $('pageInfo').textContent = `${page} / ${maxPage}`;
 
-  // aria-sort en el th activo
   document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
     th.classList.remove('asc','desc');
     th.removeAttribute('aria-sort');
@@ -330,23 +358,13 @@ function applySearchSortPaginate(){
   });
 }
 
-/* ====== Render ====== */
-function renderSkeleton(){
-  const tbody = document.querySelector('#tabla tbody');
-  tbody.innerHTML = '';
-  for(let i=0;i<6;i++){
-    const tr = document.createElement('tr');
-    tr.className = 'skeleton';
-    tr.innerHTML = '<td colspan="15"></td>';
-    tbody.appendChild(tr);
-  }
-}
+/* ====== Tabla (con columnas simplificadas) ====== */
 function renderTabla(lista){
   const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = "";
   if(!lista || lista.length===0){
     tbody.innerHTML = `
-      <tr><td colspan="15" style="padding:16px;text-align:center;color:#6b7280">
+      <tr><td colspan="12" style="padding:16px;text-align:center;color:#6b7280">
         No se encontraron registros con los filtros actuales.<br/>
         <button class="secondary" id="vaciarFiltros" style="margin-top:8px">Limpiar filtros</button>
       </td></tr>`;
@@ -355,22 +373,42 @@ function renderTabla(lista){
   }
   for(const c of lista){
     const fechaNorm = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
+
+    const dniBtn = c.dni
+      ? `<a class="btn-link" href="${c.dni}" target="_blank" rel="noopener">Abrir</a>`
+      : `<a class="btn-link" href="formularioweb.html?id=${c.id}" target="_blank" rel="noopener">Subir</a>`;
+
+    const cvBtn = c.cv
+      ? `<a class="btn-link" href="${c.cv}" target="_blank" rel="noopener">Abrir</a>`
+      : `<a class="btn-link" href="formularioweb.html?id=${c.id}" target="_blank" rel="noopener">Subir</a>`;
+
+    const docsBtn = `<button class="btn-link primary" onclick='openDocsModal(${JSON.stringify({
+      id:c.id,
+      nombre:c.nombre_completo||'',
+      dniDoc: c.dni||'',
+      certificados: c.certificados||'',
+      antecedentes: c.antecedentes||'',
+      medicos: c.medicos||'',
+      capacitacion: c.capacitacion||'',
+      cv: c.cv||''
+    }).replace(/"/g,'&quot;')})'>Ver</button>`;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c.id}</td>
-      <td>${c.dni||''}</td>
+      <td>${c.dni_numero || ''}</td>
       <td>${c.nombre_completo||''}</td>
       <td>${c.sede || ''}</td>
       <td>${c.turno_horario || ''}</td>
       <td>${c.grupo || ''}</td>
       <td>${tagEstado(c.estado)}</td>
       <td>${fechaNorm}</td>
-      <td>${linkDoc(c.dni, c.id)}</td>
-      <td>${linkDoc(c.certificados, c.id)}</td>
-      <td>${linkDoc(c.antecedentes, c.id)}</td>
-      <td>${linkDoc(c.medicos, c.id)}</td>
-      <td>${linkDoc(c.capacitacion, c.id)}</td>
-      <td>${linkDoc(c.cv, c.id)}</td>
+
+      <!-- columnas simplificadas -->
+      <td>${dniBtn}</td>
+      <td>${cvBtn}</td>
+      <td>${docsBtn}</td>
+
       <td>
         ${c.estado !== 'APROBADO'
           ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
@@ -381,6 +419,66 @@ function renderTabla(lista){
   }
 }
 
+/* ====== Modal de Documentos ====== */
+// NEW: abre el modal pasando un objeto con las URLs
+window.openDocsModal = function(candidate){
+  const bd = $('docsBackdrop');
+  const title = $('docsTitle');
+  const meta = $('docsMeta');
+  const ul = $('docsList');
+
+  title.textContent = `Documentos – ID ${candidate.id}`;
+  meta.textContent = candidate.nombre ? candidate.nombre : '';
+  ul.innerHTML = '';
+
+  const items = [
+    { key:'dniDoc', label:'DNI', url:candidate.dniDoc },
+    { key:'certificados', label:'Certificados', url:candidate.certificados },
+    { key:'antecedentes', label:'Antecedentes', url:candidate.antecedentes },
+    { key:'medicos', label:'Documentos Médicos', url:candidate.medicos },
+    { key:'capacitacion', label:'Capacitación', url:candidate.capacitacion },
+    { key:'cv', label:'Curriculum – CV', url:candidate.cv },
+  ];
+
+  for(const it of items){
+    const li = document.createElement('li');
+    const has = !!it.url;
+    li.innerHTML = `
+      <span class="doc-name">${it.label}</span>
+      ${has ? '<span class="doc-ok">Disponible</span>' : '<span class="doc-missing">No cargado</span>'}
+      <div class="doc-actions">
+        ${has ? `<a class="btn-link" href="${it.url}" target="_blank" rel="noopener">Abrir</a>` : ''}
+        <a class="btn-link" href="formularioweb.html?id=${candidate.id}" target="_blank" rel="noopener">Subir/Reemplazar</a>
+        ${ENABLE_DIRECT_DOC_API
+          ? `<button class="btn-link danger" onclick="deleteDoc(${candidate.id}, '${it.key}')">Eliminar</button>`
+          : `<button class="btn-link danger" disabled title="Desactivado para no romper la API">Eliminar</button>`
+        }
+      </div>
+    `;
+    ul.appendChild(li);
+  }
+
+  bd.style.display = 'flex';
+};
+$('docsClose').addEventListener('click', ()=> $('docsBackdrop').style.display='none');
+$('docsBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='docsBackdrop') e.currentTarget.style.display='none'; });
+
+// Opcional: stubs de carga/borrado directos si activas ENABLE_DIRECT_DOC_API
+async function deleteDoc(id, key){
+  if(!ENABLE_DIRECT_DOC_API) return;
+  if(!confirm('¿Eliminar este documento?')) return;
+  try{
+    // TODO: ajusta la URL de borrado cuando tu backend lo soporte
+    // const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'DELETE' });
+    // if(!res.ok) throw new Error('No se pudo eliminar');
+    showMsg('ok','(Demo) Documento eliminado'); // quita esto cuando conectes la API
+    $('docsBackdrop').style.display='none';
+    consultar();
+  }catch(e){
+    showMsg('err', e.message);
+  }
+}
+
 /* ====== Eventos UI ====== */
 document.querySelectorAll('.nav a').forEach(a=>{
   const href=a.getAttribute('href');
@@ -388,7 +486,6 @@ document.querySelectorAll('.nav a').forEach(a=>{
     a.classList.add('active'); a.setAttribute('aria-current','page');
   }
 });
-
 document.querySelectorAll('input[name="modo"]').forEach(r=>
   r.addEventListener('change', applyModeDisable)
 );
@@ -418,14 +515,14 @@ $('btnLimpiar').addEventListener('click', ()=>{
   $('btnExport').disabled = true;
 });
 
-/* Quick search con debounce */
+// Debounce búsqueda
 let t = null;
 $('q').addEventListener('input', ()=>{
   clearTimeout(t);
   t = setTimeout(()=>{ page=1; applySearchSortPaginate(); writeURL(); }, 250);
 });
 
-/* Orden por columnas */
+// Orden por columnas
 document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
   th.addEventListener('click', ()=>{
     const key = th.dataset.key;
@@ -437,7 +534,7 @@ document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
   });
 });
 
-/* Paginación + preferencia persistida */
+// Paginación
 $('pageSize').addEventListener('change', ()=>{
   pageSize = parseInt($('pageSize').value) || 25;
   localStorage.setItem('consulta:ps', String(pageSize));
@@ -453,16 +550,22 @@ $('nextPage').addEventListener('click', ()=>{
   if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
 });
 
-/* Export CSV (con BOM para Excel) */
+// Export CSV (con 3 columnas simplificadas en docs)
 $('btnExport').addEventListener('click', ()=>{
   const rows = [
-    ['ID','DNI','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','Certificados','Antecedentes','Medicos','Capacitacion','CV']
+    ['ID','DNI (número)','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','CV','Documentos (resumen)']
   ];
   FILTERED.forEach(c=>{
+    const fecha = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
+    const resumen = [
+      c.certificados?'certificados':'',
+      c.antecedentes?'antecedentes':'',
+      c.medicos?'medicos':'',
+      c.capacitacion?'capacitacion':''
+    ].filter(Boolean).join('; ');
     rows.push([
-      c.id, c.dni||'', c.nombre_completo||'', c.sede||'', c.turno_horario||'',
-      c.grupo||'', c.estado||'', (c.fecha || c.created_at || c.createdAt || '').slice(0,10),
-      c.dni||'', c.certificados||'', c.antecedentes||'', c.medicos||'', c.capacitacion||'', c.cv||''
+      c.id, c.dni_numero||'', c.nombre_completo||'', c.sede||'', c.turno_horario||'',
+      c.grupo||'', c.estado||'', fecha, c.dni||'', c.cv||'', resumen
     ]);
   });
   const csv = rows.map(r=>r.map(v=>{
@@ -479,7 +582,7 @@ $('btnExport').addEventListener('click', ()=>{
   a.remove();
 });
 
-/* Aprobar candidato */
+/* Aprobar */
 async function aprobar(id){
   if(!confirm("¿Marcar candidato como APROBADO?")) return;
   try{
@@ -494,7 +597,7 @@ async function aprobar(id){
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
     showMsg('ok', 'Candidato aprobado.');
-    await consultar(); // recarga
+    await consultar();
   }catch(e){
     console.error(e);
     showMsg('err', `Error al aprobar: ${e.message}`);
@@ -509,15 +612,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
-  // Inicial: lee URL + preferencia de pageSize, luego consulta
   readURL();
-  // Reflect visual del aria-sort inicial
-  applySearchSortPaginate(); // inicializa clases asc/desc antes de cargar
+  applySearchSortPaginate(); 
   consultar();
 });
 </script>
 </body>
 </html>
+
+
 
 
 
