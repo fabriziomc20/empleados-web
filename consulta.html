@@ -14,7 +14,7 @@
   .searchbox .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55}
   .table-wrap{overflow:auto;border-radius:12px;border:1px solid #e5e7eb;background:#fff;margin-top:10px}
   #tabla{margin:0}
-  #tabla thead th{position:sticky;top:0;z-index:1}
+  #tabla thead th{position:sticky;top:0;z-index:1;background:#f3f4f6}
   #tabla thead th.sortable{cursor:pointer;user-select:none}
   #tabla thead th.sortable::after{content:"↕";margin-left:6px;opacity:.4;font-size:12px}
   #tabla thead th.sortable.asc::after{content:"↑"}
@@ -54,7 +54,7 @@
 <main id="main" class="main" tabindex="-1">
   <div class="card">
     <h1>Consulta de Candidatos</h1>
-    <div id="msg"></div>
+    <div id="msg" role="status" aria-live="polite"></div>
 
     <!-- Filtros -->
     <div class="filters">
@@ -92,7 +92,7 @@
         <input id="grupoInicio" type="number" min="1" style="width:110px" />
         <label for="grupoFin">Hasta</label>
         <input id="grupoFin" type="number" min="1" style="width:110px" />
-        <div class="small">Ej.: 49–52 (si solo “Desde”, filtra ese grupo exacto).</div>
+        <div class="small">Si solo completas “Desde”, busca ese grupo exacto.</div>
       </div>
     </div>
 
@@ -100,9 +100,9 @@
     <div class="toolbar">
       <div class="searchbox grow">
         <span class="icon">🔎</span>
-        <input id="q" type="text" placeholder="Buscar por DNI o nombre…" />
+        <input id="q" type="text" placeholder="Buscar por DNI o nombre…" aria-label="Buscar por DNI o nombre" />
       </div>
-      <button id="btnConsultar">Consultar</button>
+      <button id="btnConsultar">Buscar</button>
       <button id="btnLimpiar" class="secondary">Limpiar</button>
       <button id="btnExport" class="secondary" disabled>Exportar CSV</button>
     </div>
@@ -171,7 +171,7 @@ function linkDoc(url, id){
 
 /* ====== Estado de UI / Resultados ====== */
 let RAW = [];            // resultados crudos
-let FILTERED = [];       // tras búsqueda rápida y orden
+let FILTERED = [];       // tras búsqueda y orden
 let page = 1;
 let pageSize = 25;
 let sortKey = 'fecha';
@@ -191,8 +191,15 @@ function readURL(){
   $('grupoFin').value = get('gfin','');
   $('q').value = get('q','');
   page = parseInt(get('p','1')) || 1;
-  pageSize = parseInt(get('ps','25')) || 25;
+
+  // Preferencia pageSize desde URL o localStorage
+  pageSize = parseInt(get('ps', localStorage.getItem('consulta:ps') || '25')) || 25;
   $('pageSize').value = String(pageSize);
+
+  // Orden desde URL
+  sortKey = get('sk','fecha');
+  sortDir = get('sd','desc');
+
   applyModeDisable();
 }
 function writeURL(){
@@ -206,7 +213,6 @@ function writeURL(){
   const q = $('q').value.trim();
 
   u.searchParams.set('modo', modo);
-  // Guardamos lo que el usuario ve, pero la llamada a API evita TODOS (ver consultar()).
   u.searchParams.set('ano', ano);
   u.searchParams.set('mes', mes);
   u.searchParams.set('estado', estado);
@@ -215,6 +221,8 @@ function writeURL(){
   if(q) u.searchParams.set('q', q); else u.searchParams.delete('q');
   u.searchParams.set('p', String(page));
   u.searchParams.set('ps', String(pageSize));
+  u.searchParams.set('sk', sortKey);
+  u.searchParams.set('sd', sortDir);
   history.replaceState(null, '', u.toString());
 }
 
@@ -223,12 +231,8 @@ function applyModeDisable(){
   const modo = document.querySelector('input[name="modo"]:checked').value;
   const byFecha = (modo === 'fecha');
 
-  ['filtroAno','filtroMes','filtroEstado'].forEach(id=>{
-    $(id).disabled = !byFecha;
-  });
-  ['grupoInicio','grupoFin'].forEach(id=>{
-    $(id).disabled = byFecha;
-  });
+  ['filtroAno','filtroMes','filtroEstado'].forEach(id=>{ $(id).disabled = !byFecha; });
+  ['grupoInicio','grupoFin'].forEach(id=>{ $(id).disabled = byFecha; });
 }
 
 /* ====== Fetch de datos ====== */
@@ -248,7 +252,6 @@ async function consultar(){
       showMsg('err', "Si seleccionas un mes específico, el año no puede ser TODOS.");
       return;
     }
-    // FIX: no enviar 'TODOS' al backend
     if (ano !== "TODOS") url.searchParams.set("ano", ano);
     if (mes !== "TODOS") url.searchParams.set("mes", mes);
   } else {
@@ -259,8 +262,10 @@ async function consultar(){
   }
   if (estado) url.searchParams.set("estado", estado);
 
-  // Skeleton
+  // Skeleton + estado de botón
   renderSkeleton();
+  const btn = $('btnConsultar'); const old = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Consultando…';
 
   try{
     const res = await fetch(url.toString());
@@ -278,29 +283,24 @@ async function consultar(){
     console.error(e);
     showMsg('err', `Error al consultar: ${e.message}`);
     renderTabla([]);
+  } finally {
+    btn.disabled = false; btn.textContent = old;
   }
 }
 
-/* ====== Búsqueda rápida + orden + paginación ====== */
+/* ====== Búsqueda tolerante + orden + paginación ====== */
 function applySearchSortPaginate(){
-  const q = $('q').value.trim().toLowerCase();
-  // Buscar por DNI o nombre
+  const terms = $('q').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   FILTERED = RAW.filter(r=>{
-    if(!q) return true;
-    return (String(r.dni||'').toLowerCase().includes(q) ||
-            String(r.nombre_completo||'').toLowerCase().includes(q));
+    if(!terms.length) return true;
+    const hay = (String(r.dni||'') + ' ' + String(r.nombre_completo||'')).toLowerCase();
+    return terms.every(t => hay.includes(t)); // AND de términos
   });
 
   // Orden
   FILTERED.sort((a,b)=>{
     let va = a[sortKey]; let vb = b[sortKey];
-
-    // FIX: normalizar fecha por si el backend usa otro nombre
-    if (sortKey === 'fecha') {
-      va = (a.fecha || a.created_at || a.createdAt || '');
-      vb = (b.fecha || b.created_at || b.createdAt || '');
-    }
-
+    if (sortKey === 'fecha') { va = (a.fecha || a.created_at || a.createdAt || ''); vb = (b.fecha || b.created_at || b.createdAt || ''); }
     if(typeof va === 'string') va = va.toLowerCase();
     if(typeof vb === 'string') vb = vb.toLowerCase();
     if(va < vb) return sortDir==='asc' ? -1 : 1;
@@ -318,6 +318,16 @@ function applySearchSortPaginate(){
   renderTabla(pageItems);
   $('resume').textContent = `${total} resultado${total!==1?'s':''}`;
   $('pageInfo').textContent = `${page} / ${maxPage}`;
+
+  // aria-sort en el th activo
+  document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
+    th.classList.remove('asc','desc');
+    th.removeAttribute('aria-sort');
+    if (th.dataset.key === sortKey) {
+      th.classList.add(sortDir);
+      th.setAttribute('aria-sort', sortDir === 'asc' ? 'ascending' : 'descending');
+    }
+  });
 }
 
 /* ====== Render ====== */
@@ -335,7 +345,12 @@ function renderTabla(lista){
   const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = "";
   if(!lista || lista.length===0){
-    tbody.innerHTML = `<tr><td colspan="15">No se encontraron registros</td></tr>`;
+    tbody.innerHTML = `
+      <tr><td colspan="15" style="padding:16px;text-align:center;color:#6b7280">
+        No se encontraron registros con los filtros actuales.<br/>
+        <button class="secondary" id="vaciarFiltros" style="margin-top:8px">Limpiar filtros</button>
+      </td></tr>`;
+    $('vaciarFiltros')?.addEventListener('click', ()=> $('btnLimpiar').click());
     return;
   }
   for(const c of lista){
@@ -378,6 +393,13 @@ document.querySelectorAll('input[name="modo"]').forEach(r=>
   r.addEventListener('change', applyModeDisable)
 );
 
+// Atajo "/" para enfocar búsqueda
+document.addEventListener('keydown',(e)=>{
+  if (e.key === '/' && !e.target.closest('input,select,textarea,button')) {
+    e.preventDefault(); $('q').focus();
+  }
+});
+
 $('btnConsultar').addEventListener('click', consultar);
 $('btnLimpiar').addEventListener('click', ()=>{
   $('filtroAno').value = "TODOS";
@@ -409,17 +431,16 @@ document.querySelectorAll('#tabla thead th.sortable').forEach(th=>{
     const key = th.dataset.key;
     if(sortKey === key){ sortDir = (sortDir==='asc'?'desc':'asc'); }
     else { sortKey = key; sortDir = (key==='fecha'?'desc':'asc'); }
-    document.querySelectorAll('#tabla thead th.sortable').forEach(x=>x.classList.remove('asc','desc'));
-    th.classList.add(sortDir);
     page = 1;
     applySearchSortPaginate();
     writeURL();
   });
 });
 
-/* Paginación */
+/* Paginación + preferencia persistida */
 $('pageSize').addEventListener('change', ()=>{
   pageSize = parseInt($('pageSize').value) || 25;
+  localStorage.setItem('consulta:ps', String(pageSize));
   page = 1;
   applySearchSortPaginate();
   writeURL();
@@ -432,7 +453,7 @@ $('nextPage').addEventListener('click', ()=>{
   if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
 });
 
-/* Export CSV */
+/* Export CSV (con BOM para Excel) */
 $('btnExport').addEventListener('click', ()=>{
   const rows = [
     ['ID','DNI','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','Certificados','Antecedentes','Medicos','Capacitacion','CV']
@@ -448,7 +469,8 @@ $('btnExport').addEventListener('click', ()=>{
     const s = String(v).replaceAll('"','""');
     return `"${s}"`;
   }).join(',')).join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + csv], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = 'candidatos.csv';
@@ -479,21 +501,25 @@ async function aprobar(id){
   }
 }
 
-/* Menú móvil */
+/* Menú móvil + init */
 function closeMenu(){ document.body.classList.remove('menu-open'); $('menuBtn').setAttribute('aria-expanded','false'); }
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', ()=>{
   const btn=$('menuBtn'); const backdrop=$('backdrop');
   btn?.addEventListener('click',()=>{ const open=document.body.classList.toggle('menu-open'); btn.setAttribute('aria-expanded',open); });
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
-  // inicial: lee URL -> consulta
+  // Inicial: lee URL + preferencia de pageSize, luego consulta
   readURL();
+  // Reflect visual del aria-sort inicial
+  applySearchSortPaginate(); // inicializa clases asc/desc antes de cargar
   consultar();
 });
 </script>
 </body>
 </html>
+
+
 
 
 
