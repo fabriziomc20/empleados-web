@@ -92,7 +92,7 @@
             </div>
             <div class="hint">Ej: Mañana (08:00–16:00)</div>
           </div>
-        </div> <!-- ✅ Cierre de .form-grid que faltaba -->
+        </div> <!-- ✅ Cierre de .form-grid -->
 
         <!-- Archivos -->
         <details class="fold" open>
@@ -324,20 +324,45 @@ async function populateShifts(){
   }catch(e){ console.error(e); }
 }
 
-/* submit */
+/* ========= NORMALIZACIÓN EN EL SUBMIT =========
+   - trim() extremos
+   - colapsar espacios internos
+   - mayúsculas
+   - DNI: solo dígitos
+=============================================== */
 document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
   ev.preventDefault();
   const fd = new FormData(ev.target);
+
+  // Normalizar todos los campos de texto
+  for (const [key, value] of fd.entries()) {
+    if (typeof value === 'string') {
+      let v = value.trim().replace(/\s+/g, ' ');
+      if (key === 'dni') {
+        v = v.replace(/\D+/g, ''); // solo dígitos
+      } else {
+        v = v.toUpperCase();       // mayúsculas para strings comunes
+      }
+      fd.set(key, v);
+    }
+  }
+
   try{
     const res = await fetch(API_CANDIDATOS, { method:"POST", body: fd });
-    if(!res.ok){ const clone=res.clone(); let detalle="";
+    if(!res.ok){
+      const clone=res.clone(); let detalle="";
       try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
-      throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`); }
+      throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
+    }
     showMsg('ok','Candidato registrado');
     dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
     ev.target.reset();
-  }catch(e){ console.error(e); showMsg('err',`Error al enviar: ${e.message}`); }
+  }catch(e){
+    console.error(e);
+    showMsg('err',`Error al enviar: ${e.message}`);
+  }
 });
+
 document.getElementById('btnReset').addEventListener('click',()=>{
   dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
   document.getElementById('formEmpleado').reset();
@@ -381,6 +406,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 </script>
 </body>
 </html>
+
 
 
 
