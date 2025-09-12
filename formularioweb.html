@@ -5,6 +5,11 @@
 <title>Reclutamiento – Formulario</title>
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="stylesheet" href="styles.css">
+<style>
+  /* Indicador de error para campos */
+  .field [aria-invalid="true"]{ border-color:#ef4444; }
+  .hint--error{ color:#b91c1c; }
+</style>
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -40,13 +45,13 @@
       <h1>Formulario de Candidato</h1>
       <div id="msg"></div>
 
-      <form id="formEmpleado" class="form--compact">
+      <form id="formEmpleado" class="form--compact" novalidate>
         <!-- Datos personales -->
         <div class="form-grid">
           <div class="field">
             <label for="dni">DNI</label>
-            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="12" required placeholder="00000000" />
-            <div class="hint">Solo números, sin guiones</div>
+            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="8" required placeholder="00000000" aria-describedby="dniHint" />
+            <div id="dniHint" class="hint">Debe tener <strong>8 dígitos</strong>.</div>
           </div>
 
           <div class="field">
@@ -138,7 +143,7 @@
         </details>
 
         <div class="actions actions--sticky">
-          <button type="submit">Guardar</button>
+          <button id="btnSubmit" type="submit" disabled>Guardar</button>
           <button type="button" class="secondary" id="btnReset">Limpiar</button>
         </div>
       </form>
@@ -324,24 +329,53 @@ async function populateShifts(){
   }catch(e){ console.error(e); }
 }
 
+/* ========= NORMALIZACIÓN EN VIVO DEL DNI ========= */
+const dniEl = document.getElementById('dni');
+const dniHint = document.getElementById('dniHint');
+const form = document.getElementById('formEmpleado');
+const submitBtn = document.getElementById('btnSubmit');
+
+function sanitizeDNI(v){
+  return (v || '').replace(/\D+/g,'').slice(0,8);
+}
+function updateDNIState(){
+  const v = sanitizeDNI(dniEl.value);
+  if (dniEl.value !== v) dniEl.value = v;
+
+  const ok = v.length === 8;
+  dniEl.setAttribute('aria-invalid', ok ? 'false' : 'true');
+  dniEl.setCustomValidity(ok ? '' : 'El DNI debe tener 8 dígitos');
+  dniHint.classList.toggle('hint--error', !ok);
+  submitBtn.disabled = !ok;
+}
+dniEl.addEventListener('input', updateDNIState);
+dniEl.addEventListener('blur', updateDNIState);
+
 /* ========= NORMALIZACIÓN EN EL SUBMIT =========
    - trim() extremos
    - colapsar espacios internos
    - mayúsculas
-   - DNI: solo dígitos
+   - DNI: solo dígitos (8)
 =============================================== */
-document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
+form.addEventListener('submit', async (ev)=>{
   ev.preventDefault();
-  const fd = new FormData(ev.target);
+
+  updateDNIState();
+  if (!form.checkValidity()) {
+    showMsg('err','Revisa los campos resaltados.');
+    return;
+  }
+
+  const fd = new FormData(form);
 
   // Normalizar todos los campos de texto
   for (const [key, value] of fd.entries()) {
     if (typeof value === 'string') {
       let v = value.trim().replace(/\s+/g, ' ');
       if (key === 'dni') {
-        v = v.replace(/\D+/g, ''); // solo dígitos
+        v = sanitizeDNI(v); // solo dígitos, máx 8
       } else {
-        v = v.toUpperCase();       // mayúsculas para strings comunes
+        v = v.toUpperCase(); // mayúsculas para strings comunes
       }
       fd.set(key, v);
     }
@@ -356,7 +390,10 @@ document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
     }
     showMsg('ok','Candidato registrado');
     dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
-    ev.target.reset();
+    form.reset();
+    submitBtn.disabled = true;
+    dniEl.setAttribute('aria-invalid','false');
+    dniHint.classList.remove('hint--error');
   }catch(e){
     console.error(e);
     showMsg('err',`Error al enviar: ${e.message}`);
@@ -365,7 +402,10 @@ document.getElementById('formEmpleado').addEventListener('submit', async (ev)=>{
 
 document.getElementById('btnReset').addEventListener('click',()=>{
   dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
-  document.getElementById('formEmpleado').reset();
+  form.reset();
+  submitBtn.disabled = true;
+  dniEl.setAttribute('aria-invalid','true');
+  dniHint.classList.remove('hint--error');
 });
 
 /* menú móvil + combos */
@@ -402,10 +442,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   });
 
   await Promise.all([populateSites(), populateShifts()]);
+
+  // Estado inicial del DNI/submit
+  updateDNIState();
 });
 </script>
 </body>
 </html>
+
 
 
 
