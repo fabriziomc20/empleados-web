@@ -127,7 +127,7 @@
         <thead>
           <tr>
             <th class="sortable" data-key="id">ID</th>
-            <th class="sortable" data-key="dni">DNI</th>
+            <th class="sortable" data-key="dni_numero">DNI</th>
             <th class="sortable" data-key="nombre_completo">Nombre</th>
             <th class="sortable" data-key="sede">Sede</th>
             <th>Turno</th>
@@ -136,7 +136,7 @@
             <th class="sortable" data-key="fecha">Fecha</th>
 
             <!-- Columnas simplificadas de documentos -->
-            <th>DNI</th>
+            <th>DNI - Doc</th>
             <th>Curriculum – CV</th>
             <th>Documentos</th>
 
@@ -185,8 +185,6 @@
 const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
-/* Si más adelante expones endpoints para subir/borrar desde aquí,
-   activa esto y completa uploadDocument/deleteDoc. */
 const ENABLE_DIRECT_DOC_API = false;
 
 const $ = (id)=>document.getElementById(id);
@@ -196,6 +194,11 @@ function tagEstado(estado){
   if (estado === 'APROBADO') return `<span class="tag apr">Aprobado</span>`;
   if (estado === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
   return `<span class="tag rev">En revisión</span>`;
+}
+
+/* DNI robusto: soporta variantes de nombre de campo */
+function getDniNumero(c){
+  return c?.dni_numero ?? c?.dniNumero ?? c?.dni_num ?? c?.dniNumber ?? c?.dniNro ?? c?.dni_nro ?? '';
 }
 
 /* ====== Estado de UI / Resultados ====== */
@@ -323,7 +326,7 @@ function applySearchSortPaginate(){
   const terms = $('q').value.trim().toLowerCase().split(/\s+/).filter(Boolean);
   FILTERED = RAW.filter(r=>{
     if(!terms.length) return true;
-    const hay = (String(r.dni||'') + ' ' + String(r.nombre_completo||'')).toLowerCase();
+    const hay = (String(getDniNumero(r)||'') + ' ' + String(r.nombre_completo||'')).toLowerCase();
     return terms.every(t => hay.includes(t));
   });
 
@@ -374,7 +377,7 @@ function renderTabla(lista){
   for(const c of lista){
     const fechaNorm = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
 
-    const dniBtn = c.dni
+    const dniArchivoBtn = c.dni
       ? `<a class="btn-link" href="${c.dni}" target="_blank" rel="noopener">Abrir</a>`
       : `<button class="btn-link" onclick="openDocsModal(${c.id})">Subir…</button>`;
 
@@ -387,7 +390,7 @@ function renderTabla(lista){
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${c.id}</td>
-      <td>${c.dni_numero || ''}</td>
+      <td>${getDniNumero(c)}</td>
       <td>${c.nombre_completo||''}</td>
       <td>${c.sede || ''}</td>
       <td>${c.turno_horario || ''}</td>
@@ -396,7 +399,7 @@ function renderTabla(lista){
       <td>${fechaNorm}</td>
 
       <!-- columnas simplificadas -->
-      <td>${dniBtn}</td>
+      <td>${dniArchivoBtn}</td>
       <td>${cvBtn}</td>
       <td>${docsBtn}</td>
 
@@ -424,7 +427,6 @@ function docItemsFromCandidate(c){
 }
 
 window.openDocsModal = function(id){
-  // Busca el candidato en los datos cargados
   const cand = RAW.find(x=>String(x.id)===String(id)) || FILTERED.find(x=>String(x.id)===String(id));
   if(!cand){ showMsg('err','No se encontró el candidato'); return; }
   CURRENT_CANDIDATE = cand;
@@ -463,7 +465,7 @@ window.openDocsModal = function(id){
 $('docsClose').addEventListener('click', ()=> $('docsBackdrop').style.display='none');
 $('docsBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='docsBackdrop') e.currentTarget.style.display='none'; });
 
-/* Click en Subir… / Reemplazar… (abre file picker) */
+/* Click en Subir… / Reemplazar… -> abrir file picker */
 document.getElementById('docsList').addEventListener('click', (e)=>{
   const btn = e.target.closest('button[data-key]');
   if(!btn) return;
@@ -477,7 +479,6 @@ document.getElementById('docsList').addEventListener('click', (e)=>{
   fileInput.click();
 });
 
-/* Selección de archivo -> subir */
 $('docFileInput').addEventListener('change', async (e)=>{
   const file = e.target.files && e.target.files[0];
   if(!file) return;
@@ -490,21 +491,15 @@ $('docFileInput').addEventListener('change', async (e)=>{
     showMsg('err', err.message || 'Error al subir');
   }finally{
     $('docsBackdrop').style.display='none';
-    consultar(); // refresca listado
+    consultar();
   }
 });
 
-/* (Stub) Subida directa — completa cuando tengas endpoint */
+/* Stubs de subida/borrado (no rompen nada) */
 async function uploadDocument(id, key, file){
   if(!ENABLE_DIRECT_DOC_API){
-    // Aquí NO hacemos nada para no romper. Solo informamos.
-    // Cuando tengas el endpoint:
-    // const fd = new FormData(); fd.append(key, file);
-    // const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'POST', body: fd });
-    // if(!res.ok) throw new Error('No se pudo subir');
     return Promise.resolve();
   }
-  // Ejemplo de implementación real (ajusta la URL y método a tu backend):
   const fd = new FormData();
   fd.append(key, file);
   const res = await fetch(`${API_CANDIDATOS}/${id}/documentos/${key}`, { method:'POST', body: fd });
@@ -513,8 +508,6 @@ async function uploadDocument(id, key, file){
     throw new Error(`Error HTTP ${res.status} ${txt}`);
   }
 }
-
-/* (Stub) Eliminar documento — completa cuando tengas endpoint */
 async function deleteDoc(id, key){
   if(!ENABLE_DIRECT_DOC_API) return;
   if(!confirm('¿Eliminar este documento?')) return;
@@ -600,10 +593,10 @@ $('nextPage').addEventListener('click', ()=>{
   if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
 });
 
-// Export CSV (con 3 columnas simplificadas en docs)
+// Export CSV (actualizado nombres de columna)
 $('btnExport').addEventListener('click', ()=>{
   const rows = [
-    ['ID','DNI (número)','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','CV','Documentos (resumen)']
+    ['ID','DNI (número)','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI - Doc','CV','Documentos (resumen)']
   ];
   FILTERED.forEach(c=>{
     const fecha = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
@@ -614,7 +607,7 @@ $('btnExport').addEventListener('click', ()=>{
       c.capacitacion?'capacitacion':''
     ].filter(Boolean).join('; ');
     rows.push([
-      c.id, c.dni_numero||'', c.nombre_completo||'', c.sede||'', c.turno_horario||'',
+      c.id, getDniNumero(c), c.nombre_completo||'', c.sede||'', c.turno_horario||'',
       c.grupo||'', c.estado||'', fecha, c.dni||'', c.cv||'', resumen
     ]);
   });
@@ -669,6 +662,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
