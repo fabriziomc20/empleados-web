@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Alta de empleado</title>
+  <style>
+    :root{ --bg:#0b1220; --surface:#0f172a; --panel:#111a2e; --text:#e2e8f0; --muted:#93a3b8; --brand:#60a5fa; --border:#1e293b; --ok:#34d399; --bad:#f43f5e; --radius:16px; --shadow: 0 12px 30px rgba(0,0,0,.35); --space:clamp(14px,1.5vw,24px); }
+    @media (prefers-color-scheme: light){ :root{ --bg:#f8fafc; --surface:#ffffff; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --brand:#2563eb; --border:#e2e8f0; --shadow:0 6px 18px rgba(2,6,23,.08);} }
+    html,body{ height:100%; }
+    body{ margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica; background:var(--bg); color:var(--text); }
+    .container{ width:min(1100px, 100% - 2*var(--space)); margin-inline:auto; padding:var(--space) 0 var(--space) 0; }
+    h1{ font-size:clamp(22px,2.4vw + 8px,34px); margin:0 0 6px; }
+    h2{ font-size:clamp(18px,1.6vw + 8px,24px); margin:0 0 4px; }
+    p{ margin:0; color:var(--muted); }
+
+    .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:calc(var(--space)*1.0); }
+    .grid{ display:grid; gap:var(--space); }
+    .grid-2{ grid-template-columns: repeat(2, 1fr); }
+    @media (max-width: 900px){ .grid-2{ grid-template-columns:1fr; } }
+
+    .form{ display:grid; gap:14px; }
+    .row{ display:grid; gap:14px; grid-template-columns: repeat(2, 1fr); }
+    .field{ display:grid; gap:6px; }
+    label{ font-size:.92rem; color:var(--muted); }
+    input, select{ padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text); }
+    input:focus, select:focus{ outline:2px solid color-mix(in oklab, var(--brand) 40%, transparent); border-color:var(--brand); }
+    .hint{ color:var(--muted); font-size:.85rem; }
+    .actions{ display:flex; gap:10px; flex-wrap:wrap; }
+    .btn{ display:inline-flex; align-items:center; gap:.6ch; border-radius:12px; padding:10px 14px; border:1px solid var(--border); background:var(--brand); color:white; font-weight:600; box-shadow:var(--shadow); cursor:pointer; }
+    .btn.secondary{ background:transparent; color:var(--text); }
+    .status{ margin-top:10px; font-size:.95rem; }
+    .ok{ color:var(--ok); }
+    .bad{ color:var(--bad); }
+
+    .two-panels{ display:grid; gap:var(--space); grid-template-columns: 1.1fr .9fr; align-items:start; }
+    @media (max-width: 1100px){ .two-panels{ grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header style="margin-bottom:var(--space)">
+      <h1>Alta de empleado</h1>
+      <p>Completa los datos personales y la asignación de proyecto/horario. Todo se valida en el cliente antes de enviar.</p>
+    </header>
+
+    <div class="two-panels">
+      <!-- ===================== FORM PRINCIPAL ===================== -->
+      <form id="altaForm" class="grid form" novalidate>
+        <!-- DATOS PERSONALES -->
+        <section class="card">
+          <h2>Datos personales</h2>
+          <p class="hint">Los campos marcados son obligatorios.</p>
+          <div class="row" style="margin-top:10px">
+            <div class="field">
+              <label for="dni">DNI *</label>
+              <input id="dni" name="dni" type="text" required minlength="8" maxlength="12" placeholder="Ej. 12345678" />
+            </div>
+            <div class="field">
+              <label for="genero">Género *</label>
+              <select id="genero" name="genero" required>
+                <option value="">Selecciona…</option>
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+                <option value="X">Otro/Prefiere no decir</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="apepat">Apellido paterno *</label>
+              <input id="apepat" name="apepat" type="text" required />
+            </div>
+            <div class="field">
+              <label for="apemat">Apellido materno *</label>
+              <input id="apemat" name="apemat" type="text" required />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="nombres">Nombres *</label>
+              <input id="nombres" name="nombres" type="text" required />
+            </div>
+            <div class="field">
+              <label for="discapacidad">Discapacidad</label>
+              <select id="discapacidad" name="discapacidad">
+                <option value="NINGUNA" selected>Ninguna</option>
+                <option value="VISUAL">Visual</option>
+                <option value="AUDITIVA">Auditiva</option>
+                <option value="MOTORA">Motora</option>
+                <option value="COGNITIVA">Cognitiva</option>
+                <option value="OTRA">Otra</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="fecha_nac">Fecha de nacimiento *</label>
+              <input id="fecha_nac" name="fecha_nac" type="date" required />
+            </div>
+            <div class="field">
+              <label for="celular">Celular</label>
+              <input id="celular" name="celular" type="tel" placeholder="Opcional" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="dir1">Dirección 1 *</label>
+              <input id="dir1" name="dir1" type="text" required />
+            </div>
+            <div class="field">
+              <label for="dir2">Dirección 2</label>
+              <input id="dir2" name="dir2" type="text" placeholder="(opcional)" />
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="email">E-mail</label>
+              <input id="email" name="email" type="email" placeholder="correo@ejemplo.com" />
+            </div>
+          </div>
+        </section>
+
+        <!-- PROYECTO Y HORARIO -->
+        <section class="card">
+          <h2>Proyecto y horario</h2>
+          <p class="hint">El proyecto es obligatorio; sede y turno son opcionales.</p>
+          <div class="row" style="margin-top:10px">
+            <div class="field">
+              <label for="proyecto">Proyecto *</label>
+              <select id="proyecto" name="proyecto" required>
+                <option value="">Cargando…</option>
+              </select>
+              <span class="hint">Se carga desde catálogo de proyectos.</span>
+            </div>
+            <div class="field">
+              <label for="sede">Sede</label>
+              <select id="sede" name="sede">
+                <option value="">(opcional)</option>
+              </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="turno">Turno</label>
+              <select id="turno" name="turno">
+                <option value="">(opcional)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="inicio_asig">Fecha inicio asignación</label>
+              <input id="inicio_asig" name="inicio_asig" type="date" />
+              <span class="hint">Si lo dejas vacío, el backend usará la fecha actual.</span>
+            </div>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button class="btn" type="submit">Guardar</button>
+          <button class="btn secondary" type="reset">Limpiar</button>
+          <span id="status" class="status"></span>
+        </div>
+      </form>
+
+      <!-- ===================== PANEL LATERAL (AYUDA) ===================== -->
+      <aside class="card" aria-label="Ayuda">
+        <h2>Cómo funciona</h2>
+        <ul style="margin:10px 0 0; padding-left:18px; color:var(--muted)">
+          <li>Valida requeridos en el cliente.</li>
+          <li>Carga catálogos de <strong>proyectos, sedes, turnos</strong> vía API.</li>
+          <li>Envía un <strong>POST /api/empleados/alta</strong> (JSON) con datos personales + asignación.</li>
+          <li>El backend inserta en <code>persons</code> y crea la asignación en <code>project_assignments</code>.</li>
+        </ul>
+        <p class="hint" style="margin-top:10px">Puedes cambiar las rutas de catálogo y de guardado en el bloque de JavaScript.</p>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    // ===== Config de endpoints (ajusta a tu backend) =====
+    const ENDPOINTS = {
+      projects: '/api/catalog/projects', // GET -> [{id, code, name, site_id}]
+      sites:    '/api/catalog/sites',    // GET -> [{id, code, name}]
+      shifts:   '/api/catalog/shifts',   // GET -> [{id, name}]
+      alta:     '/api/empleados/alta'    // POST <- JSON
+    };
+
+    const $ = (s, c=document)=>c.querySelector(s);
+    const $$ = (s, c=document)=>Array.from(c.querySelectorAll(s));
+
+    const form = $('#altaForm');
+    const statusEl = $('#status');
+
+    // ===== Cargar catálogos =====
+    async function loadCatalogs(){
+      try{
+        const [projectsRes, sitesRes, shiftsRes] = await Promise.all([
+          fetch(ENDPOINTS.projects),
+          fetch(ENDPOINTS.sites),
+          fetch(ENDPOINTS.shifts)
+        ]);
+        const [projects, sites, shifts] = await Promise.all([
+          projectsRes.ok ? projectsRes.json() : [],
+          sitesRes.ok ? sitesRes.json() : [],
+          shiftsRes.ok ? shiftsRes.json() : []
+        ]);
+        fillSelect($('#proyecto'), projects, { placeholder:'Selecciona un proyecto…' });
+        fillSelect($('#sede'), sites, { allowEmpty:true });
+        fillSelect($('#turno'), shifts, { allowEmpty:true });
+      }catch(e){
+        console.error(e);
+        $('#proyecto').innerHTML = '<option value="">(Error al cargar)</option>';
+      }
+    }
+
+    function fillSelect(sel, items, opts={}){
+      const { allowEmpty=false, placeholder=null } = opts;
+      const optsHtml = [];
+      if(placeholder) optsHtml.push(`<option value="">${placeholder}</option>`);
+      if(allowEmpty && !placeholder) optsHtml.push('<option value="">(opcional)</option>');
+      for(const it of items){
+        // soporte id+name o code+name
+        const val = it.id ?? it.code ?? '';
+        const text = it.name ?? it.code ?? String(val);
+        optsHtml.push(`<option value="${val}">${text}</option>`);
+      }
+      sel.innerHTML = optsHtml.join('');
+    }
+
+    // ===== Validación ligera =====
+    function validate(){
+      statusEl.textContent = '';
+      const requiredIds = ['dni','genero','apepat','apemat','nombres','fecha_nac','dir1','proyecto'];
+      for(const id of requiredIds){
+        const el = document.getElementById(id);
+        if(!el.value){ el.focus(); return { ok:false, msg:`Completa el campo requerido: ${el.labels?.[0]?.innerText || id}`}; }
+      }
+      const email = $('#email').value.trim();
+      if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+        $('#email').focus();
+        return { ok:false, msg:'E-mail no válido' };
+      }
+      return { ok:true };
+    }
+
+    // ===== Envío =====
+    form.addEventListener('submit', async (ev)=>{
+      ev.preventDefault();
+      const v = validate();
+      if(!v.ok){ statusEl.textContent = v.msg; statusEl.className = 'status bad'; return; }
+
+      const payload = collectPayload();
+      try{
+        statusEl.textContent = 'Guardando…'; statusEl.className = 'status';
+        const res = await fetch(ENDPOINTS.alta, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if(!res.ok){
+          const err = await res.text();
+          throw new Error(err || 'Error al guardar');
+        }
+        const data = await res.json().catch(()=>({}));
+        statusEl.textContent = 'Guardado correctamente'; statusEl.className = 'status ok';
+        // opcional: limpiar
+        // form.reset();
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = 'No se pudo guardar: ' + e.message;
+        statusEl.className = 'status bad';
+      }
+    });
+
+    function collectPayload(){
+      return {
+        persona: {
+          dni: $('#dni').value.trim(),
+          status: 'ACTIVO', // alta inicial
+          apellido_paterno: $('#apepat').value.trim(),
+          apellido_materno: $('#apemat').value.trim(),
+          nombres: $('#nombres').value.trim(),
+          genero: $('#genero').value,
+          discapacidad: $('#discapacidad').value || 'NINGUNA',
+          fecha_nacimiento: $('#fecha_nac').value,
+          direccion_1: $('#dir1').value.trim(),
+          direccion_2: $('#dir2').value.trim() || null,
+          celular: $('#celular').value.trim() || null,
+          email: $('#email').value.trim() || null
+        },
+        asignacion: {
+          project_id: selectValue('#proyecto'),
+          site_id: selectValue('#sede'), // opcional
+          shift_id: selectValue('#turno'), // opcional
+          valid_from: $('#inicio_asig').value || null
+        }
+      };
+    }
+
+    function selectValue(sel){ const v = $(sel).value; return v === '' ? null : (isNaN(+v) ? v : +v); }
+
+    // init
+    loadCatalogs();
+  </script>
+</body>
+</html>
