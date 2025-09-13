@@ -241,6 +241,7 @@ let page = 1;
 let pageSize = 25;
 let sortKey = 'fecha';
 let sortDir = 'desc';    // 'asc' | 'desc'
+let SERVER_TOTAL = 0; // NEW: total devuelto por backend
 
 /* ====== URL <-> Estado ====== */
 function readURL(){
@@ -317,6 +318,12 @@ async function consultar(){
   }
   if (estado) url.searchParams.set("estado", estado);
 
+  // NEW: paginación en servidor
+  const limit = pageSize;
+  const offset = (page - 1) * pageSize;
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("offset", String(offset));
+
   renderSkeleton();
 
   try{
@@ -326,26 +333,42 @@ async function consultar(){
       try{ const d=await clone.json(); detalle=d?.error||JSON.stringify(d) }catch{ try{ detalle=await clone.text(); }catch{} }
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
-    RAW = await res.json();
-    page = 1;
+
+    const payload = await res.json();
+    // Compat: si el backend viejo devuelve array, seguimos funcionando
+    RAW = Array.isArray(payload) ? payload : (payload.items || []);
+    SERVER_TOTAL = Array.isArray(payload) ? RAW.length : (payload.total || RAW.length);
+
+    // Nota: al consultar cambiamos a página 1 sólo si venimos de otra búsqueda.
+    // Si quieres siempre resetear página, descomenta:
+    // page = 1;
+
     applySearchSortPaginate();
-    if (RAW.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
+
+    if (SERVER_TOTAL === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
   }catch(e){
     console.error(e);
     showMsg('err', `Error al consultar: ${e.message}`);
     renderTabla([]);
+    SERVER_TOTAL = 0;
+    $('resume').textContent = '0 resultados';
+    $('pageInfo').textContent = '1 / 1';
   }
 }
+
 
 /* ====== Búsqueda + orden + paginación ====== */
 function applySearchSortPaginate(){
   const q = $('q').value.trim().toLowerCase();
+
+  // Filtramos sólo lo que llegó en esta página (búsqueda rápida local)
   FILTERED = RAW.filter(r=>{
     if(!q) return true;
     return (String(r.dni_numero||'').toLowerCase().includes(q) ||
             String(r.nombre_completo||'').toLowerCase().includes(q));
   });
 
+  // Orden local sobre la página actual
   FILTERED.sort((a,b)=>{
     let va = a[sortKey]; let vb = b[sortKey];
     if (sortKey === 'fecha') { va = (a.fecha || a.created_at || a.createdAt || ''); vb = (b.fecha || b.created_at || b.createdAt || ''); }
@@ -358,16 +381,21 @@ function applySearchSortPaginate(){
     return 0;
   });
 
-  const total = FILTERED.length;
-  const maxPage = Math.max(1, Math.ceil(total / pageSize));
-  if(page > maxPage) page = maxPage;
+  renderTabla(FILTERED);
 
-  const start = (page-1)*pageSize;
-  const pageItems = FILTERED.slice(start, start+pageSize);
-
-  renderTabla(pageItems);
-  $('resume').textContent = `${total} resultado${total!==1?'s':''}`;
+  // Info de paginación usando el total del servidor
+  const maxPage = Math.max(1, Math.ceil(SERVER_TOTAL / pageSize));
+  $('resume').textContent = q
+    ? `${FILTERED.length} resultado${FILTERED.length!==1?'s':''} (de ${SERVER_TOTAL})`
+    : `${SERVER_TOTAL} resultado${SERVER_TOTAL!==1?'s':''}`;
   $('pageInfo').textContent = `${page} / ${maxPage}`;
+}
+
+/* ===== Esto es para desahilitar los botones deretroceso y avance en extremos ===== */
+function updatePagerDisabled(){
+  const maxPage = Math.max(1, Math.ceil(SERVER_TOTAL / pageSize));
+  $('prevPage').disabled = (page <= 1);
+  $('nextPage').disabled = (page >= maxPage);
 }
 
 /* ====== Render ====== */
@@ -598,6 +626,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
