@@ -25,6 +25,12 @@
   .pagerbar .right{display:flex;gap:10px;align-items:center}
   .muted{color:#6b7280;font-size:12.5px}
 
+  /* Leyenda de estado de documentos */
+  .legend{display:flex;align-items:center;gap:8px}
+  .doc-flag{width:10px;height:10px;border-radius:50%;display:inline-block;vertical-align:middle}
+  .doc-flag.ok{background:#16a34a}
+  .doc-flag.miss{background:#ef4444}
+
   /* Modal de documentos */
   .docs-modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:100}
   .docs-modal{background:#fff;border-radius:14px;max-width:720px;width:92%;max-height:80vh;overflow:auto;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
@@ -118,6 +124,10 @@
       </div>
       <button id="btnConsultar">Buscar</button>
       <button id="btnLimpiar" class="secondary">Limpiar</button>
+      <div class="legend muted" aria-hidden="true" title="Leyenda: verde=cargado, rojo=faltante">
+        <span class="doc-flag ok"></span><span>cargado</span>
+        <span class="doc-flag miss" style="margin-left:8px"></span><span>faltante</span>
+      </div>
       <button id="btnExport" class="secondary" disabled>Exportar CSV</button>
     </div>
 
@@ -135,7 +145,7 @@
             <th class="sortable" data-key="estado">Estado</th>
             <th class="sortable" data-key="fecha">Fecha</th>
 
-            <!-- Columnas simplificadas de documentos -->
+            <!-- Columnas simplificadas (solo estado) -->
             <th>DNI - Doc</th>
             <th>Curriculum – CV</th>
             <th>Documentos</th>
@@ -185,6 +195,7 @@
 const API_BASE = "https://empleados-api-o6yy.onrender.com";
 const API_CANDIDATOS = `${API_BASE}/api/candidatos`;
 
+// Si en el futuro conectas endpoints directos de documentos, cámbialo a true.
 const ENABLE_DIRECT_DOC_API = false;
 
 const $ = (id)=>document.getElementById(id);
@@ -199,6 +210,12 @@ function tagEstado(estado){
 /* DNI robusto: soporta variantes de nombre de campo */
 function getDniNumero(c){
   return c?.dni_numero ?? c?.dniNumero ?? c?.dni_num ?? c?.dniNumber ?? c?.dniNro ?? c?.dni_nro ?? '';
+}
+
+/* Icono de estado de documento (solo punto de color con tooltip) */
+function docFlag(ok, label){
+  const ttl = `${label}: ${ok ? 'cargado' : 'faltante'}`;
+  return `<span class="doc-flag ${ok?'ok':'miss'}" title="${ttl}" aria-label="${ttl}"></span>`;
 }
 
 /* ====== Estado de UI / Resultados ====== */
@@ -361,7 +378,7 @@ function applySearchSortPaginate(){
   });
 }
 
-/* ====== Tabla (con columnas simplificadas) ====== */
+/* ====== Tabla (con columnas de estado) ====== */
 function renderTabla(lista){
   const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = "";
@@ -377,15 +394,10 @@ function renderTabla(lista){
   for(const c of lista){
     const fechaNorm = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
 
-    const dniArchivoBtn = c.dni
-      ? `<a class="btn-link" href="${c.dni}" target="_blank" rel="noopener">Abrir</a>`
-      : `<button class="btn-link" onclick="openDocsModal(${c.id})">Subir…</button>`;
-
-    const cvBtn = c.cv
-      ? `<a class="btn-link" href="${c.cv}" target="_blank" rel="noopener">Abrir</a>`
-      : `<button class="btn-link" onclick="openDocsModal(${c.id})">Subir…</button>`;
-
-    const docsBtn = `<button class="btn-link primary" onclick="openDocsModal(${c.id})">Ver</button>`;
+    // Solo iconos de estado; todo lo demás via modal
+    const dniDocIcon = docFlag(!!c.dni, 'DNI - Doc');
+    const cvIcon     = docFlag(!!c.cv,  'Curriculum – CV');
+    const docsBtn    = `<button class="btn-link primary" onclick="openDocsModal(${c.id})">Documentos</button>`;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -398,9 +410,9 @@ function renderTabla(lista){
       <td>${tagEstado(c.estado)}</td>
       <td>${fechaNorm}</td>
 
-      <!-- columnas simplificadas -->
-      <td>${dniArchivoBtn}</td>
-      <td>${cvBtn}</td>
+      <!-- columnas de estado -->
+      <td style="text-align:center">${dniDocIcon}</td>
+      <td style="text-align:center">${cvIcon}</td>
       <td>${docsBtn}</td>
 
       <td>
@@ -452,7 +464,7 @@ window.openDocsModal = function(id){
         <button class="btn-link primary" data-key="${it.key}" data-accept="${it.accept}">
           ${has ? 'Reemplazar…' : 'Subir…'}
         </button>
-        <button class="btn-link danger" ${ENABLE_DIRECT_DOC_API ? '' : 'disabled title="Desactivado para no romper la API"' }
+        <button class="btn-link danger" ${ENABLE_DIRECT_DOC_API ? '' : 'disabled title="Desactivado para no romper la API"'}
                 data-del="${it.key}">Eliminar</button>
       </div>
     `;
@@ -593,10 +605,10 @@ $('nextPage').addEventListener('click', ()=>{
   if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
 });
 
-// Export CSV (actualizado nombres de columna)
+// Export CSV (ahora exporta estados SI/NO)
 $('btnExport').addEventListener('click', ()=>{
   const rows = [
-    ['ID','DNI (número)','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI - Doc','CV','Documentos (resumen)']
+    ['ID','DNI (número)','Nombre','Sede','Turno','Grupo','Estado','Fecha','dni_doc_ok','cv_ok','docs_resumen']
   ];
   FILTERED.forEach(c=>{
     const fecha = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
@@ -608,7 +620,10 @@ $('btnExport').addEventListener('click', ()=>{
     ].filter(Boolean).join('; ');
     rows.push([
       c.id, getDniNumero(c), c.nombre_completo||'', c.sede||'', c.turno_horario||'',
-      c.grupo||'', c.estado||'', fecha, c.dni||'', c.cv||'', resumen
+      c.grupo||'', c.estado||'', fecha,
+      c.dni ? 'SI':'NO',
+      c.cv ? 'SI':'NO',
+      resumen
     ]);
   });
   const csv = rows.map(r=>r.map(v=>{
@@ -656,12 +671,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
   readURL();
-  applySearchSortPaginate(); 
+  applySearchSortPaginate();
   consultar();
 });
 </script>
 </body>
 </html>
+
 
 
 
