@@ -40,9 +40,17 @@
 
   /* Leyenda de estado de documentos */
   .legend{display:flex;align-items:center;gap:10px}
-  .dot{width:10px;height:10px;border-radius:50%;}
-  .dot.ok{background:#22c55e}
-  .dot.miss{background:#ef4444}
+  /* puntos de estado (visible en celdas y leyenda) */
+  .dot{
+    display:inline-block;      /* <— clave */
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    vertical-align:middle;
+  }
+  .dot.ok{ background:#22c55e; }   /* verde */
+  .dot.miss{ background:#ef4444; }  /* rojo */
+
 
   /* Modal Documentos */
   .modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:80}
@@ -615,6 +623,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
 
 
