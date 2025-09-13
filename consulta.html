@@ -40,17 +40,17 @@
 
   /* Leyenda de estado de documentos */
   .legend{display:flex;align-items:center;gap:10px}
+
   /* puntos de estado (visible en celdas y leyenda) */
   .dot{
-    display:inline-block;      /* <— clave */
+    display:inline-block;
     width:10px;
     height:10px;
     border-radius:50%;
     vertical-align:middle;
   }
   .dot.ok{ background:#22c55e; }   /* verde */
-  .dot.miss{ background:#ef4444; }  /* rojo */
-
+  .dot.miss{ background:#ef4444; } /* rojo */
 
   /* Modal Documentos */
   .modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:80}
@@ -66,18 +66,17 @@
   .danger{background:#fee2e2!important;color:#7f1d1d!important}
   .btn-link{background:none;border:none;color:#2563eb;cursor:pointer;padding:0}
   .btn-link:hover{text-decoration:underline}
+
+  /* Topbar simple sin menú */
+  .topbar{display:flex;align-items:center;gap:10px;background:var(--panel);padding:10px;position:sticky;top:0;z-index:60;box-shadow:0 1px 3px rgba(0,0,0,.06)}
 </style>
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
+
 <header class="topbar">
-  <button id="menuBtn" class="menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Menú">☰</button>
   <div class="logo-sm">RR.HH. Suite</div>
 </header>
-  
-<!-- ACABA ESTABA EL SIDEBAR -->
-
-<div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
 
 <main id="main" class="main" tabindex="-1">
   <div class="card">
@@ -420,6 +419,7 @@ function openDocs(id){
   CURRENT_CANDIDATE_ID = id;
   $('docBackdrop').classList.add('open');
   $('docTitle').textContent = `Documentos del candidato #${id}`;
+  $('docClose').focus();
   loadDocs(id);
 }
 function closeDocs(){
@@ -428,6 +428,8 @@ function closeDocs(){
   $('docTbody').innerHTML = `<tr><td colspan="4" class="small">Cargando…</td></tr>`;
 }
 $('docClose').addEventListener('click', closeDocs);
+$('docBackdrop').addEventListener('click', (e)=>{ if(e.target.id==='docBackdrop') closeDocs(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeDocs(); });
 
 async function loadDocs(id){
   try{
@@ -481,7 +483,7 @@ $('docForm').addEventListener('submit', async (e)=>{
   fd.append('file', file);
 
   try{
-    // Ajusta esta URL si tu endpoint es distinto
+    // Ajusta si tu endpoint difiere
     const res = await fetch(`${API_CANDIDATOS}/${CURRENT_CANDIDATE_ID}/documentos`, {
       method:'POST',
       body: fd
@@ -493,7 +495,7 @@ $('docForm').addEventListener('submit', async (e)=>{
     $('docFile').value = '';
     $('docTipo').value = '';
     await loadDocs(CURRENT_CANDIDATE_ID);
-    await consultar(); // refrescar tabla (puntos)
+    await consultar(); // refrescar puntos
   }catch(e){
     console.error(e);
     alert('Error subiendo documento: ' + e.message);
@@ -510,7 +512,7 @@ async function deleteDoc(encodedUrl){
   if(!confirm('¿Eliminar este documento?')) return;
 
   try{
-    // Ajusta esta URL si tu endpoint es distinto
+    // Ajusta si tu endpoint difiere
     const res = await fetch(`${API_CANDIDATOS}/${CURRENT_CANDIDATE_ID}/documentos?url=${encodedUrl}`, {
       method:'DELETE'
     });
@@ -519,7 +521,7 @@ async function deleteDoc(encodedUrl){
       throw new Error(`HTTP ${res.status} ${txt}`);
     }
     await loadDocs(CURRENT_CANDIDATE_ID);
-    await consultar(); // refrescar tabla (puntos)
+    await consultar(); // refrescar puntos
   }catch(e){
     console.error(e);
     alert('Error eliminando documento: ' + e.message);
@@ -527,14 +529,7 @@ async function deleteDoc(encodedUrl){
 }
 
 /* ====== Eventos UI ====== */
-document.querySelectorAll('.nav a').forEach(a=>{
-  const href=a.getAttribute('href');
-  if (href && location.pathname.endsWith(href)){
-    a.classList.add('active'); a.setAttribute('aria-current','page');
-  }
-});
 document.querySelectorAll('input[name="modo"]').forEach(r=> r.addEventListener('change', applyModeDisable));
-
 $('btnConsultar').addEventListener('click', consultar);
 
 /* Quick search con debounce */
@@ -595,20 +590,16 @@ async function aprobar(id){
   }
 }
 
-/* Menú móvil */
-function closeMenu(){ document.body.classList.remove('menu-open'); $('menuBtn').setAttribute('aria-expanded','false'); }
-document.addEventListener('DOMContentLoaded',()=>{
-  const btn=$('menuBtn'); const backdrop=$('backdrop');
-  btn?.addEventListener('click',()=>{ const open=document.body.classList.toggle('menu-open'); btn.setAttribute('aria-expanded',open); });
-  backdrop?.addEventListener('click',closeMenu);
-  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
-
+/* Inicialización */
+document.addEventListener('DOMContentLoaded', ()=>{
   readURL();
   consultar();
 });
 </script>
 </body>
 </html>
+
+
 
 
 
