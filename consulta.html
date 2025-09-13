@@ -25,6 +25,21 @@
   .pagerbar .right{display:flex;gap:10px;align-items:center}
   .muted{color:#6b7280;font-size:12.5px}
   .doc-icon{font-size:16px;text-align:center}
+
+  /* Modal Documentos */
+  .modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:80}
+  .modal-backdrop.open{display:flex}
+  .modal{background:#fff;border-radius:14px;max-width:900px;width:92%;max-height:82vh;overflow:auto;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+  .modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .modal .grid2{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+  .doclist{width:100%;border-collapse:collapse}
+  .doclist th,.doclist td{border:1px solid #e5e7eb;padding:8px;text-align:left;font-size:14px}
+  .doclist th{background:#f3f4f6}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:999px;padding:4px 8px}
+  .pill-tipo{font-size:12px;color:#374151;background:#eef2ff;border:1px solid #dbeafe;border-radius:999px;padding:2px 6px}
+  .danger{background:#fee2e2!important;color:#7f1d1d!important}
+  .btn-link{background:none;border:none;color:#2563eb;cursor:pointer;padding:0}
+  .btn-link:hover{text-decoration:underline}
 </style>
 </head>
 <body>
@@ -122,11 +137,8 @@
             <th class="sortable" data-key="estado">Estado</th>
             <th class="sortable" data-key="fecha">Fecha</th>
             <th>DNI – Doc</th>
-            <th>Certif.</th>
-            <th>Anteced.</th>
-            <th>Médicos</th>
-            <th>Capacit.</th>
             <th>Curriculum – CV</th>
+            <th>Documentos</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -152,6 +164,48 @@
   </div>
 </main>
 
+<!-- MODAL Documentos -->
+<div id="docBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="docTitle">
+  <div class="modal">
+    <header>
+      <h3 id="docTitle">Documentos del candidato</h3>
+      <button class="secondary" id="docClose">Cerrar</button>
+    </header>
+
+    <section class="grid2">
+      <div>
+        <table class="doclist" id="docTable">
+          <thead>
+            <tr><th>Tipo</th><th>Archivo</th><th>Fecha</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="docTbody">
+            <tr><td colspan="4" class="small">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <form id="docForm" class="box" style="padding:10px;min-width:240px">
+        <label for="docTipo">Subir nuevo</label>
+        <select id="docTipo" required>
+          <option value="">Seleccione tipo…</option>
+          <option value="dni">DNI</option>
+          <option value="certificados">Certificados</option>
+          <option value="antecedentes">Antecedentes</option>
+          <option value="medicos">Médicos</option>
+          <option value="capacitacion">Capacitación</option>
+          <option value="cv">Curriculum – CV</option>
+        </select>
+        <input id="docFile" type="file" style="margin-top:8px" required />
+        <div class="actions" style="margin-top:8px">
+          <button type="submit">Subir</button>
+          <button type="button" class="secondary" id="docReset">Limpiar</button>
+        </div>
+        <div class="small" style="margin-top:6px">Formatos comunes: PDF / JPG / PNG / DOC / DOCX</div>
+      </form>
+    </section>
+  </div>
+</div>
+
 <script>
 /* ====== Helpers básicos ====== */
 const API_BASE = "https://empleados-api-o6yy.onrender.com";
@@ -161,13 +215,12 @@ const $ = (id)=>document.getElementById(id);
 function showMsg(type, text){ const box=$('msg'); box.className=type==='ok'?'ok':'err'; box.textContent=text; box.style.display='block'; }
 function clearMsg(){ const box=$('msg'); box.style.display='none'; box.textContent=''; box.className=''; }
 function tagEstado(estado){
-  if ((estado||'').toUpperCase() === 'APROBADO') return `<span class="tag apr">Aprobado</span>`;
-  if ((estado||'').toUpperCase() === 'CANCELADO') return `<span class="tag can">Cancelado</span>`;
+  const s=(estado||'').toUpperCase();
+  if (s==='APROBADO') return `<span class="tag apr">Aprobado</span>`;
+  if (s==='CANCELADO') return `<span class="tag can">Cancelado</span>`;
   return `<span class="tag rev">En revisión</span>`;
 }
-function iconoDoc(url){
-  return `<span class="doc-icon" title="${url ? 'Documento cargado' : 'Sin documento'}">${url ? '✅' : '—'}</span>`;
-}
+function iconoDoc(url){ return `<span class="doc-icon" title="${url ? 'Documento cargado' : 'Sin documento'}">${url ? '✅' : '—'}</span>`; }
 
 /* ====== Estado de UI / Resultados ====== */
 let RAW = [];            // resultados crudos
@@ -177,7 +230,7 @@ let pageSize = 25;
 let sortKey = 'fecha';
 let sortDir = 'desc';    // 'asc' | 'desc'
 
-/* ====== URL <-> Estado (deep link) ====== */
+/* ====== URL <-> Estado ====== */
 function readURL(){
   const u = new URL(location.href);
   const get = (k,def='') => u.searchParams.get(k) ?? def;
@@ -217,17 +270,12 @@ function writeURL(){
   history.replaceState(null, '', u.toString());
 }
 
-/* ====== Filtros (habilitar/deshabilitar campos) ====== */
+/* ====== Filtros ====== */
 function applyModeDisable(){
   const modo = document.querySelector('input[name="modo"]:checked').value;
   const byFecha = (modo === 'fecha');
-
-  ['filtroAno','filtroMes','filtroEstado'].forEach(id=>{
-    $(id).disabled = !byFecha;
-  });
-  ['grupoInicio','grupoFin'].forEach(id=>{
-    $(id).disabled = byFecha;
-  });
+  ['filtroAno','filtroMes','filtroEstado'].forEach(id=>$(id).disabled = !byFecha);
+  ['grupoInicio','grupoFin'].forEach(id=>$(id).disabled = byFecha);
 }
 
 /* ====== Fetch de datos ====== */
@@ -247,7 +295,6 @@ async function consultar(){
       showMsg('err', "Si seleccionas un mes específico, el año no puede ser TODOS.");
       return;
     }
-    // No enviar 'TODOS' al backend
     if (ano !== "TODOS") url.searchParams.set("ano", ano);
     if (mes !== "TODOS") url.searchParams.set("mes", mes);
   } else {
@@ -258,7 +305,6 @@ async function consultar(){
   }
   if (estado) url.searchParams.set("estado", estado);
 
-  // Skeleton
   renderSkeleton();
 
   try{
@@ -269,7 +315,7 @@ async function consultar(){
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
     RAW = await res.json();
-    page = 1; // reset página en cada consulta
+    page = 1;
     applySearchSortPaginate();
     if (RAW.length === 0) showMsg('ok','Sin resultados con los filtros seleccionados.');
     $('btnExport').disabled = RAW.length === 0;
@@ -280,34 +326,20 @@ async function consultar(){
   }
 }
 
-/* ====== Búsqueda rápida + orden + paginación ====== */
+/* ====== Búsqueda + orden + paginación ====== */
 function applySearchSortPaginate(){
   const q = $('q').value.trim().toLowerCase();
-  // Buscar por DNI (dni_numero) o nombre
   FILTERED = RAW.filter(r=>{
     if(!q) return true;
     return (String(r.dni_numero||'').toLowerCase().includes(q) ||
             String(r.nombre_completo||'').toLowerCase().includes(q));
   });
 
-  // Orden
   FILTERED.sort((a,b)=>{
     let va = a[sortKey]; let vb = b[sortKey];
-
-    // normalizar fecha por si viene con otro nombre
-    if (sortKey === 'fecha') {
-      va = (a.fecha || a.created_at || a.createdAt || '');
-      vb = (b.fecha || b.created_at || b.createdAt || '');
-    }
-
-    // comparar numéricamente si ambos son numéricos
+    if (sortKey === 'fecha') { va = (a.fecha || a.created_at || a.createdAt || ''); vb = (b.fecha || b.created_at || b.createdAt || ''); }
     const na = Number(va), nb = Number(vb);
-    if (!Number.isNaN(na) && !Number.isNaN(nb)) {
-      if(na < nb) return sortDir==='asc' ? -1 : 1;
-      if(na > nb) return sortDir==='asc' ? 1 : -1;
-      return 0;
-    }
-
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return sortDir==='asc' ? na-nb : nb-na;
     if(typeof va === 'string') va = va.toLowerCase();
     if(typeof vb === 'string') vb = vb.toLowerCase();
     if(va < vb) return sortDir==='asc' ? -1 : 1;
@@ -334,7 +366,7 @@ function renderSkeleton(){
   for(let i=0;i<6;i++){
     const tr = document.createElement('tr');
     tr.className = 'skeleton';
-    tr.innerHTML = '<td colspan="15"></td>';
+    tr.innerHTML = '<td colspan="12"></td>';
     tbody.appendChild(tr);
   }
 }
@@ -342,7 +374,7 @@ function renderTabla(lista){
   const tbody = document.querySelector('#tabla tbody');
   tbody.innerHTML = "";
   if(!lista || lista.length===0){
-    tbody.innerHTML = `<tr><td colspan="15">No se encontraron registros</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12">No se encontraron registros</td></tr>`;
     return;
   }
   for(const c of lista){
@@ -358,11 +390,8 @@ function renderTabla(lista){
       <td>${tagEstado(c.estado)}</td>
       <td>${fechaNorm}</td>
       <td>${iconoDoc(c.dni_doc)}</td>
-      <td>${iconoDoc(c.certificados)}</td>
-      <td>${iconoDoc(c.antecedentes)}</td>
-      <td>${iconoDoc(c.medicos)}</td>
-      <td>${iconoDoc(c.capacitacion)}</td>
       <td>${iconoDoc(c.cv_doc)}</td>
+      <td><button class="secondary" onclick="openDocs(${c.id})">Ver documentos</button></td>
       <td>
         ${String(c.estado||'').toUpperCase() !== 'APROBADO'
           ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
@@ -373,6 +402,119 @@ function renderTabla(lista){
   }
 }
 
+/* ====== Modal de Documentos ====== */
+let CURRENT_CANDIDATE_ID = null;
+
+function openDocs(id){
+  CURRENT_CANDIDATE_ID = id;
+  $('docBackdrop').classList.add('open');
+  $('docTitle').textContent = `Documentos del candidato #${id}`;
+  loadDocs(id);
+}
+function closeDocs(){
+  $('docBackdrop').classList.remove('open');
+  CURRENT_CANDIDATE_ID = null;
+  $('docTbody').innerHTML = `<tr><td colspan="4" class="small">Cargando…</td></tr>`;
+}
+$('docClose').addEventListener('click', closeDocs);
+
+async function loadDocs(id){
+  try{
+    const res = await fetch(`${API_CANDIDATOS}/${id}`);
+    if(!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const docs = Array.isArray(data.documentos) ? data.documentos : [];
+    renderDocs(docs);
+  }catch(e){
+    console.error(e);
+    $('docTbody').innerHTML = `<tr><td colspan="4" class="small">Error cargando documentos</td></tr>`;
+  }
+}
+
+function renderDocs(docs){
+  const tbody = $('docTbody');
+  if(!docs.length){
+    tbody.innerHTML = `<tr><td colspan="4" class="small">Sin documentos</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = docs.map(d=>{
+    const fecha = (d.created_at || '').slice(0,19).replace('T',' ');
+    const safeURL = encodeURIComponent(d.url || '');
+    return `
+      <tr>
+        <td><span class="pill-tipo">${(d.tipo||'').toUpperCase()}</span></td>
+        <td>
+          <span class="file-pill">
+            📄 <a href="${d.url}" target="_blank" rel="noopener">Abrir</a>
+          </span>
+        </td>
+        <td>${fecha}</td>
+        <td>
+          <button class="btn-link danger" onclick="deleteDoc('${safeURL}')">Eliminar</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* Subir */
+$('docForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  if(!CURRENT_CANDIDATE_ID) return;
+  const tipo = $('docTipo').value;
+  const file = $('docFile').files[0];
+  if(!tipo || !file){ return; }
+
+  const fd = new FormData();
+  fd.append('tipo', tipo);
+  fd.append('file', file);
+
+  try{
+    // Ajusta esta URL si tu endpoint es distinto
+    const res = await fetch(`${API_CANDIDATOS}/${CURRENT_CANDIDATE_ID}/documentos`, {
+      method:'POST',
+      body: fd
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${txt}`);
+    }
+    $('docFile').value = '';
+    $('docTipo').value = '';
+    await loadDocs(CURRENT_CANDIDATE_ID);
+    await consultar(); // refrescar tabla (íconos)
+  }catch(e){
+    console.error(e);
+    alert('Error subiendo documento: ' + e.message);
+  }
+});
+$('docReset').addEventListener('click', ()=>{
+  $('docFile').value = '';
+  $('docTipo').value = '';
+});
+
+/* Eliminar */
+async function deleteDoc(encodedUrl){
+  if(!CURRENT_CANDIDATE_ID) return;
+  if(!confirm('¿Eliminar este documento?')) return;
+
+  try{
+    // Ajusta esta URL si tu endpoint es distinto
+    const res = await fetch(`${API_CANDIDATOS}/${CURRENT_CANDIDATE_ID}/documentos?url=${encodedUrl}`, {
+      method:'DELETE'
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=> '');
+      throw new Error(`HTTP ${res.status} ${txt}`);
+    }
+    await loadDocs(CURRENT_CANDIDATE_ID);
+    await consultar(); // refrescar tabla (íconos)
+  }catch(e){
+    console.error(e);
+    alert('Error eliminando documento: ' + e.message);
+  }
+}
+
 /* ====== Eventos UI ====== */
 document.querySelectorAll('.nav a').forEach(a=>{
   const href=a.getAttribute('href');
@@ -380,10 +522,7 @@ document.querySelectorAll('.nav a').forEach(a=>{
     a.classList.add('active'); a.setAttribute('aria-current','page');
   }
 });
-
-document.querySelectorAll('input[name="modo"]').forEach(r=>
-  r.addEventListener('change', applyModeDisable)
-);
+document.querySelectorAll('input[name="modo"]').forEach(r=> r.addEventListener('change', applyModeDisable));
 
 $('btnConsultar').addEventListener('click', consultar);
 $('btnLimpiar').addEventListener('click', ()=>{
@@ -439,10 +578,10 @@ $('nextPage').addEventListener('click', ()=>{
   if(page<maxPage){ page++; applySearchSortPaginate(); writeURL(); }
 });
 
-/* Export CSV */
+/* Export CSV (incluye presencia de docs) */
 $('btnExport').addEventListener('click', ()=>{
   const rows = [
-    ['ID','DNI','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','Certificados','Antecedentes','Medicos','Capacitacion','CV']
+    ['ID','DNI','Nombre','Sede','Turno','Grupo','Estado','Fecha','DNI Doc','CV Doc']
   ];
   FILTERED.forEach(c=>{
     rows.push([
@@ -454,12 +593,8 @@ $('btnExport').addEventListener('click', ()=>{
       c.grupo || '',
       c.estado || '',
       (c.fecha || c.created_at || c.createdAt || '').slice(0,10),
-      c.dni_doc || '',
-      c.certificados || '',
-      c.antecedentes || '',
-      c.medicos || '',
-      c.capacitacion || '',
-      c.cv_doc || ''
+      c.dni_doc ? 'SI' : 'NO',
+      c.cv_doc ? 'SI' : 'NO'
     ]);
   });
   const csv = rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\n');
@@ -479,7 +614,7 @@ async function aprobar(id){
     const res = await fetch(`${API_CANDIDATOS}/${id}/estado`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ estado: "Aprobado" }) // el backend hace LOWER() al comparar
+      body: JSON.stringify({ estado: "Aprobado" })
     });
     if(!res.ok){
       const clone=res.clone(); let detalle="";
@@ -487,7 +622,7 @@ async function aprobar(id){
       throw new Error(`HTTP ${res.status} – ${detalle||'Error'}`);
     }
     showMsg('ok', 'Candidato aprobado.');
-    await consultar(); // recarga
+    await consultar();
   }catch(e){
     console.error(e);
     showMsg('err', `Error al aprobar: ${e.message}`);
@@ -502,13 +637,13 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 
-  // inicial: lee URL -> consulta
   readURL();
   consultar();
 });
 </script>
 </body>
 </html>
+
 
 
 
