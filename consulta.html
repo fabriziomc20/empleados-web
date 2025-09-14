@@ -418,6 +418,9 @@ function renderTabla(lista){
   }
   for(const c of lista){
     const fechaNorm = (c.fecha || c.created_at || c.createdAt || '').slice(0,10);
+    const count = Number.isFinite(c.doc_count) ? c.doc_count : null; // puede venir undefined si backend viejo
+    const label = Number.isFinite(count) ? `Documentos (${count})` : `Documentos`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${tagEstado(c.estado)}</td>
@@ -429,7 +432,12 @@ function renderTabla(lista){
       <td>${c.grupo || ''}</td>
       <td style="text-align:center">${iconoDot(c.dni_doc)}</td>
       <td style="text-align:center">${iconoDot(c.cv_doc)}</td>
-      <td><button class="btn-doc" onclick="openDocs(${c.id})">Documentos</button></td>
+      <td>
+        <button class="btn-doc"
+                data-cid="${c.id}"
+                ${Number.isFinite(count) ? `data-count="${count}"` : ``}
+                onclick="openDocs(${c.id})">${label}</button>
+      </td>
       <td>
         ${String(c.estado||'').toUpperCase() !== 'APROBADO'
           ? `<button onclick="aprobar(${c.id})" style="margin-bottom:6px">Aprobar</button><br/>` : ``}
@@ -439,6 +447,7 @@ function renderTabla(lista){
     tbody.appendChild(tr);
   }
 }
+
 
 /* ====== Modal de Documentos ====== */
 let CURRENT_CANDIDATE_ID = null;
@@ -466,6 +475,13 @@ async function loadDocs(id){
     const data = await res.json();
     const docs = Array.isArray(data.documentos) ? data.documentos : [];
     renderDocs(docs);
+    
+    // NEW: si el botón no tenía count, lo actualizamos aquí
+    const btn = document.querySelector(`.btn-doc[data-cid="${id}"]`);
+    if (btn) {
+      btn.dataset.count = String(docs.length);
+      btn.textContent = `Documentos (${docs.length})`;
+    }
   }catch(e){
     console.error(e);
     $('docTbody').innerHTML = `<tr><td colspan="4" class="small">Error cargando documentos</td></tr>`;
@@ -626,6 +642,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 </script>
 </body>
 </html>
+
 
 
 
