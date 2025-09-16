@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Reclutamiento – Consulta</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+  /* Extras mínimos para esta pantalla */
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 12px}
+  .toolbar .grow{flex:1}
+  .searchbox{position:relative}
+  .searchbox input{padding-left:30px}
+  .searchbox .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:.55}
+  .table-wrap{overflow:auto;border-radius:12px;border:1px solid #e5e7eb;background:#fff;margin-top:10px}
+  #tabla{margin:0}
+  #tabla thead th{position:sticky;top:0;z-index:1}
+  #tabla thead th.sortable{cursor:pointer;user-select:none}
+  #tabla thead th.sortable::after{content:"↕";margin-left:6px;opacity:.4;font-size:12px}
+  #tabla thead th.sortable.asc::after{content:"↑"}
+  #tabla thead th.sortable.desc::after{content:"↓"}
+  .skeleton td{height:40px;background:linear-gradient(90deg,#f3f4f6,#e5e7eb,#f3f4f6);background-size:200% 100%;animation:sk 1.3s infinite}
+  @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .pagerbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap}
+  .pagerbar .right{display:flex;gap:10px;align-items:center}
+  .muted{color:#6b7280;font-size:12.5px}
+  .doc-icon{font-size:16px;text-align:center}
+
+  /* Pill azul para Documentos (similar al anterior que te gustaba) */
+  .btn-doc{
+    background:#2563eb;
+    color:#fff;
+    border:none;
+    padding:8px 12px;
+    border-radius:999px;
+    cursor:pointer;
+    font-weight:600;
+  }
+  .btn-doc:hover{background:#1d4ed8}
+
+  /* Leyenda de estado de documentos */
+  .legend{display:flex;align-items:center;gap:10px}
+
+  /* puntos de estado (visible en celdas y leyenda) */
+  .dot{
+    display:inline-block;
+    width:10px;
+    height:10px;
+    border-radius:50%;
+    vertical-align:middle;
+  }
+  .dot.ok{ background:#22c55e; }   /* verde */
+  .dot.miss{ background:#ef4444; } /* rojo */
+
+  /* Modal Documentos */
+  .modal-backdrop{position:fixed;inset:0;background:#0005;display:none;align-items:center;justify-content:center;z-index:80}
+  .modal-backdrop.open{display:flex}
+  .modal{background:#fff;border-radius:14px;max-width:900px;width:92%;max-height:82vh;overflow:auto;padding:16px;box-shadow:0 4px 10px rgba(0,0,0,.1)}
+  .modal header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .modal .grid2{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end}
+  .doclist{width:100%;border-collapse:collapse}
+  .doclist th,.doclist td{border:1px solid #e5e7eb;padding:8px;text-align:left;font-size:14px}
+  .doclist th{background:#f3f4f6}
+  .file-pill{display:inline-flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:999px;padding:4px 8px}
+  .pill-tipo{font-size:12px;color:#374151;background:#eef2ff;border:1px solid #dbeafe;border-radius:999px;padding:2px 6px}
+  .danger{background:#fee2e2!important;color:#7f1d1d!important}
+  .btn-link{background:none;border:none;color:#2563eb;cursor:pointer;padding:0}
+  .btn-link:hover{text-decoration:underline}
+
+  /* Topbar simple sin menú */
+  .topbar{display:flex;align-items:center;gap:10px;background:var(--panel);padding:10px;position:sticky;top:0;z-index:60;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="topbar topbar-simple">
+  <div class="logo-sm">RR.HH. Suite</div>
+</header>
+
+<main id="main" class="main" tabindex="-1">
+  <div class="card">
+    <h1>Consulta de Candidatos</h1>
+    <div id="msg"></div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <div class="box" id="boxFecha">
+        <div style="margin-bottom:8px">
+          <label><input type="radio" name="modo" value="fecha" checked> Filtrar por Mes + Año</label>
+        </div>
+        <label for="filtroAno">Año</label>
+        <select id="filtroAno">
+          <option value="TODOS">TODOS</option>
+          <option>2023</option><option>2024</option><option>2025</option>
+        </select>
+        <label for="filtroMes">Mes</label>
+        <select id="filtroMes">
+          <option value="TODOS">TODOS</option>
+          <option value="1">Enero</option><option value="2">Febrero</option><option value="3">Marzo</option>
+          <option value="4">Abril</option><option value="5">Mayo</option><option value="6">Junio</option>
+          <option value="7">Julio</option><option value="8">Agosto</option><option value="9">Septiembre</option>
+          <option value="10">Octubre</option><option value="11">Noviembre</option><option value="12">Diciembre</option>
+        </select>
+        <label for="filtroEstado">Estado</label>
+        <select id="filtroEstado">
+          <option value="">(Todos)</option>
+          <option value="EN_REVISION">En revisión</option>
+          <option value="CANCELADO">Cancelado</option>
+          <option value="APROBADO">Aprobado</option>
+        </select>
+      </div>
+
+      <div class="box" id="boxGrupo">
+        <div style="margin-bottom:8px">
+          <label><input type="radio" name="modo" value="grupo"> Filtrar por Grupo (rango)</label>
+        </div>
+        <label for="grupoInicio">Desde</label>
+        <input id="grupoInicio" type="number" min="1" style="width:110px" />
+        <label for="grupoFin">Hasta</label>
+        <input id="grupoFin" type="number" min="1" style="width:110px" />
+        <div class="small">Ej.: 49–52 (si solo “Desde”, filtra ese grupo exacto).</div>
+      </div>
+    </div>
+
+    <!-- Barra de acciones -->
+    <div class="toolbar">
+      <div class="searchbox grow">
+        <span class="icon">🔎</span>
+        <input id="q" type="text" placeholder="Buscar por DNI o nombre…" />
+      </div>
+      <button id="btnConsultar">Buscar</button>
+      <div class="legend">
+        <span class="dot ok"></span><span class="small">cargado</span>
+        <span class="dot miss" style="margin-left:8px"></span><span class="small">faltante</span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-wrap" role="region" aria-label="Resultados">
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th class="sortable" data-key="estado">Estado</th>
+            <th class="sortable" data-key="fecha">Fecha</th>
+            <th class="sortable" data-key="dni_numero">DNI</th>
+            <th class="sortable" data-key="nombre_completo">Nombre</th>
+            <th class="sortable" data-key="sede">Sede</th>
+            <th>Turno</th>
+            <th class="sortable" data-key="grupo">Grupo</th>
+            <th>DNI – Doc</th>
+            <th>Curriculum – CV</th>
+            <th>Documentos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="pagerbar">
+      <div class="muted" id="resume">0 resultados</div>
+      <div class="right">
+        <label class="small">Filas por página
+          <select id="pageSize">
+            <option>10</option><option selected>25</option><option>50</option><option>100</option>
+          </select>
+        </label>
+        <button class="secondary" id="prevPage">« Anterior</button>
+        <span class="small" id="pageInfo">1 / 1</span>
+        <button class="secondary" id="nextPage">Siguiente »</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- MODAL Documentos -->
+<div id="docBackdrop" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="docTitle">
+  <div class="modal">
+    <header>
+      <h3 id="docTitle">Documentos del candidato</h3>
+      <button class="secondary" id="docClose">Cerrar</button>
+    </header>
+
+    <section class="grid2">
+      <div>
+        <table class="doclist" id="docTable">
+          <thead>
+            <tr><th>Tipo</th><th>Archivo</th><th>Fecha</th><th>Acciones</th></tr>
+          </thead>
+          <tbody id="docTbody">
+            <tr><td colspan="4" class="small">Cargando…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <form id="docForm" class="box" style="padding:10px;min-width:240px">
+        <label for="docTipo">Subir nuevo</label>
+        <select id="docTipo" required>
+          <option value="">Seleccione tipo…</option>
+          <option value="dni">DNI</option>
+          <option value="certificados">Certificados</option>
+          <option value="antecedentes">Antecedentes</option>
+          <option value="medicos">Médicos</option>
+          <option value="capacitacion">Capacitación</option>
+          <option value="cv">Curriculum – CV</option>
+        </select>
+        <input id="docFile" type="file" style="margin-top:8px" required />
+        <div class="actions" style="margin-top:8px">
+          <button type="submit">Subir</button>
+          <button type="button" class="secondary" id="docReset">Limpiar</button>
+        </div>
+        <div class="small" style="margin-top:6px">Formatos comunes: PDF / JPG / PNG / DOC / DOCX</div>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script src="../js/consulta.js" defer></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

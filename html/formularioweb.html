@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>Reclutamiento – Formulario</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+  /* Indicador de error para campos */
+  .field [aria-invalid="true"]{ border-color:#ef4444; }
+  .hint--error{ color:#b91c1c; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
+
+<header class="topbar">
+  <button id="menuBtn" class="menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Menú">☰</button>
+  <div class="logo-sm">RR.HH. Suite</div>
+</header>
+
+<aside id="sidebar" class="sidebar">
+  <div class="logo">RR.HH. Suite</div>
+  <nav class="nav" aria-label="Navegación principal">
+    <div class="caption">Reclutamiento</div>
+    <a href="formularioweb.html" class="active" aria-current="page">Formulario</a>
+    <!-- Eliminado: <a href="consulta.html">Consulta</a> -->
+    <div class="caption">Operación</div>
+    <a href="empleados.html">Empleados</a>
+    <a href="contratos.html">Contratos</a>
+    <a href="nomina.html">Nómina</a>
+    <div class="sep"></div>
+    <div class="caption">Usuario / Configuración</div>
+    <a href="config.html">Parámetros de Empresa</a>
+  </nav>
+</aside>
+
+<div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
+
+<main id="main" class="main" tabindex="-1">
+  <!-- Contenedor en dos columnas -->
+  <div class="two-col">
+    <!-- Columna principal -->
+    <section class="card card--narrow">
+      <h1>Formulario de Candidato</h1>
+      <div id="msg"></div>
+
+      <form id="formEmpleado" class="form--compact" novalidate>
+        <!-- Datos personales -->
+        <div class="form-grid">
+          <div class="field">
+            <label for="dni">DNI</label>
+            <input id="dni" name="dni" type="text" inputmode="numeric" maxlength="10" required placeholder="00000000" aria-describedby="dniHint" />
+            <div id="dniHint" class="hint">Debe tener <strong>8 dígitos</strong>.</div>
+          </div>
+
+          <div class="field">
+            <label for="grupo">Grupo</label>
+            <input id="grupo" name="grupo" type="text" placeholder="G-01" />
+          </div>
+
+          <div class="field">
+            <label for="apellido_paterno">Ap. Paterno</label>
+            <input id="apellido_paterno" name="apellido_paterno" type="text" required placeholder="Pérez" />
+          </div>
+
+          <div class="field">
+            <label for="apellido_materno">Ap. Materno</label>
+            <input id="apellido_materno" name="apellido_materno" type="text" required placeholder="Soto" />
+          </div>
+
+          <div class="field">
+            <label for="nombres">Nombres</label>
+            <input id="nombres" name="nombres" type="text" required placeholder="María Fernanda" />
+          </div>
+
+          <!-- Sede -->
+          <div class="field">
+            <label for="sede_input">Sede</label>
+            <div class="combo" role="combobox" aria-expanded="false" aria-owns="sede_listbox" aria-haspopup="listbox">
+              <input id="sede_input" class="combo-input" type="text" placeholder="Escribe para filtrar..." aria-autocomplete="list" aria-controls="sede_listbox" autocomplete="off" />
+              <button type="button" class="combo-toggle" aria-label="Mostrar/ocultar opciones" data-toggle="sede_listbox">▾</button>
+              <input id="sede" name="sede" type="hidden" />
+              <ul id="sede_listbox" class="combo-list" role="listbox"></ul>
+            </div>
+            <div class="hint">Selecciona una de la lista</div>
+          </div>
+
+          <!-- Turno -->
+          <div class="field">
+            <label for="turno_input">Turno</label>
+            <div class="combo" role="combobox" aria-expanded="false" aria-owns="turno_listbox" aria-haspopup="listbox">
+              <input id="turno_input" class="combo-input" type="text" placeholder="Escribe para filtrar..." aria-autocomplete="list" aria-controls="turno_listbox" autocomplete="off" />
+              <button type="button" class="combo-toggle" aria-label="Mostrar/ocultar opciones" data-toggle="turno_listbox">▾</button>
+              <input id="turno_horario" name="turno_horario" type="hidden" />
+              <ul id="turno_listbox" class="combo-list" role="listbox"></ul>
+            </div>
+            <div class="hint">Ej: Mañana (08:00–16:00)</div>
+          </div>
+        </div> <!-- ✅ Cierre de .form-grid -->
+
+        <!-- Archivos -->
+        <details class="fold" open>
+          <summary>DNI (PDF/JPG/PNG)</summary>
+          <div class="drop" id="dniDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="dniInput" name="dni" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="dniList" class="file-list"></ul>
+        </details>
+
+        <details class="fold">
+          <summary>Certificados</summary>
+          <div class="drop" id="certificadosDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="certificadosInput" name="certificados" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="certificadosList" class="file-list"></ul>
+        </details>
+
+        <details class="fold">
+          <summary>Antecedentes</summary>
+          <div class="drop" id="antecedentesDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="antecedentesInput" name="antecedentes" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="antecedentesList" class="file-list"></ul>
+        </details>
+
+        <details class="fold">
+          <summary>Documentos médicos</summary>
+          <div class="drop" id="medicosDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="medicosInput" name="medicos" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="medicosList" class="file-list"></ul>
+        </details>
+
+        <details class="fold">
+          <summary>Capacitación</summary>
+          <div class="drop" id="capacitacionDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="capacitacionInput" name="capacitacion" accept=".pdf,.jpg,.jpeg,.png" multiple hidden>
+          <ul id="capacitacionList" class="file-list"></ul>
+        </details>
+
+        <details class="fold">
+          <summary>CV</summary>
+          <div class="drop" id="cvDrop">Arrastra aquí o haz clic</div>
+          <input type="file" id="cvInput" name="cv" accept=".pdf,.doc,.docx" hidden>
+          <ul id="cvList" class="file-list"></ul>
+        </details>
+
+        <div class="actions actions--sticky">
+          <button id="btnSubmit" type="submit" disabled>Guardar</button>
+          <button type="button" class="secondary" id="btnReset">Limpiar</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Columna lateral -->
+    <aside class="side">
+      <div class="card side-card">
+        <h2>Consulta rápida</h2>
+        <p class="small">Abre el listado de candidatos en otra pestaña sin salir del formulario.</p>
+        <button class="secondary" onclick="window.open('consulta.html','_blank','noopener')" aria-label="Abrir Consulta en una nueva pestaña">
+          Abrir Consulta ↗
+        </button>
+      </div>
+
+      <div class="card side-card">
+        <h2>Notas</h2>
+        <p class="small">Espacio libre para futuros widgets o recordatorios.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="../js/formulario.js" defer></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

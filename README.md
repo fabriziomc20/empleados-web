@@ -10,4 +10,10 @@ Este proyecto no utiliza un sistema de build. Para probar las interacciones din√
 python -m http.server
 ```
 
-Luego abre `config.html` en tu navegador.
+Luego abre `html/config.html` en tu navegador.
+
+## Estructura
+
+- `html/`: plantillas HTML (formularios, consultas, paneles y parciales).
+- `css/`: hojas de estilo compartidas.
+- `js/`: scripts JavaScript para cada pantalla.
