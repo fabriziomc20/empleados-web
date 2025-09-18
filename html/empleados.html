@@ -1,181 +1,160 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alta de empleado</title>
-  <style>
-    :root{ --bg:#0b1220; --surface:#0f172a; --panel:#111a2e; --text:#e2e8f0; --muted:#93a3b8; --brand:#60a5fa; --border:#1e293b; --ok:#34d399; --bad:#f43f5e; --radius:16px; --shadow: 0 12px 30px rgba(0,0,0,.35); --space:clamp(14px,1.5vw,24px); }
-    @media (prefers-color-scheme: light){ :root{ --bg:#f8fafc; --surface:#ffffff; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --brand:#2563eb; --border:#e2e8f0; --shadow:0 6px 18px rgba(2,6,23,.08);} }
-    html,body{ height:100%; }
-    body{ margin:0; font-family:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica; background:var(--bg); color:var(--text); }
-    .container{ width:min(1100px, 100% - 2*var(--space)); margin-inline:auto; padding:var(--space) 0 var(--space) 0; }
-    h1{ font-size:clamp(22px,2.4vw + 8px,34px); margin:0 0 6px; }
-    h2{ font-size:clamp(18px,1.6vw + 8px,24px); margin:0 0 4px; }
-    p{ margin:0; color:var(--muted); }
-
-    .card{ background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:calc(var(--space)*1.0); }
-    .grid{ display:grid; gap:var(--space); }
-    .grid-2{ grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 900px){ .grid-2{ grid-template-columns:1fr; } }
-
-    .form{ display:grid; gap:14px; }
-    .row{ display:grid; gap:14px; grid-template-columns: repeat(2, 1fr); }
-    .field{ display:grid; gap:6px; }
-    label{ font-size:.92rem; color:var(--muted); }
-    input, select{ padding:12px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text); }
-    input:focus, select:focus{ outline:2px solid color-mix(in oklab, var(--brand) 40%, transparent); border-color:var(--brand); }
-    .hint{ color:var(--muted); font-size:.85rem; }
-    .actions{ display:flex; gap:10px; flex-wrap:wrap; }
-    .btn{ display:inline-flex; align-items:center; gap:.6ch; border-radius:12px; padding:10px 14px; border:1px solid var(--border); background:var(--brand); color:white; font-weight:600; box-shadow:var(--shadow); cursor:pointer; }
-    .btn.secondary{ background:transparent; color:var(--text); }
-    .status{ margin-top:10px; font-size:.95rem; }
-    .ok{ color:var(--ok); }
-    .bad{ color:var(--bad); }
-
-    .two-panels{ display:grid; gap:var(--space); grid-template-columns: 1.1fr .9fr; align-items:start; }
-    @media (max-width: 1100px){ .two-panels{ grid-template-columns:1fr; } }
-  </style>
+  <title>Operación – Empleados</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <!-- Layout global -->
+  <link rel="stylesheet" href="../css/styles.css">
+  <!-- Estilos específicos de Empleados -->
+  <link rel="stylesheet" href="../css/empleados.css">
 </head>
 <body>
-  <div class="container">
-    <header style="margin-bottom:var(--space)">
-      <h1>Alta de empleado</h1>
-      <p>Completa los datos personales y la asignación de proyecto/horario. Todo se valida en el cliente antes de enviar.</p>
-    </header>
+  <a class="skip-link" href="#main">Saltar al contenido</a>
 
-    <div class="two-panels">
-      <!-- ===================== FORM PRINCIPAL ===================== -->
-      <form id="altaForm" class="grid form" novalidate>
-        <!-- DATOS PERSONALES -->
-        <section class="card">
-          <h2>Datos personales</h2>
-          <p class="hint">Los campos marcados son obligatorios.</p>
-          <div class="row" style="margin-top:10px">
-            <div class="field">
-              <label for="dni">DNI *</label>
-              <input id="dni" name="dni" type="text" required minlength="8" maxlength="12" placeholder="Ej. 12345678" />
-            </div>
-            <div class="field">
-              <label for="genero">Género *</label>
-              <select id="genero" name="genero" required>
-                <option value="">Selecciona…</option>
-                <option value="M">Masculino</option>
-                <option value="F">Femenino</option>
-                <option value="X">Otro/Prefiere no decir</option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="apepat">Apellido paterno *</label>
-              <input id="apepat" name="apepat" type="text" required />
-            </div>
-            <div class="field">
-              <label for="apemat">Apellido materno *</label>
-              <input id="apemat" name="apemat" type="text" required />
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="nombres">Nombres *</label>
-              <input id="nombres" name="nombres" type="text" required />
-            </div>
-            <div class="field">
-              <label for="discapacidad">Discapacidad</label>
-              <select id="discapacidad" name="discapacidad">
-                <option value="NINGUNA" selected>Ninguna</option>
-                <option value="VISUAL">Visual</option>
-                <option value="AUDITIVA">Auditiva</option>
-                <option value="MOTORA">Motora</option>
-                <option value="COGNITIVA">Cognitiva</option>
-                <option value="OTRA">Otra</option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="fecha_nac">Fecha de nacimiento *</label>
-              <input id="fecha_nac" name="fecha_nac" type="date" required />
-            </div>
-            <div class="field">
-              <label for="celular">Celular</label>
-              <input id="celular" name="celular" type="tel" placeholder="Opcional" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="dir1">Dirección 1 *</label>
-              <input id="dir1" name="dir1" type="text" required />
-            </div>
-            <div class="field">
-              <label for="dir2">Dirección 2</label>
-              <input id="dir2" name="dir2" type="text" placeholder="(opcional)" />
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="email">E-mail</label>
-              <input id="email" name="email" type="email" placeholder="correo@ejemplo.com" />
-            </div>
-          </div>
-        </section>
+  <!-- Topbar -->
+  <header class="topbar">
+    <button id="menuBtn" class="menu-btn" aria-controls="sidebar" aria-expanded="false" aria-label="Menú">☰</button>
+    <div class="logo-sm">RR.HH. Suite</div>
+  </header>
 
-        <!-- PROYECTO Y HORARIO -->
-        <section class="card">
-          <h2>Proyecto y horario</h2>
-          <p class="hint">El proyecto es obligatorio; sede y turno son opcionales.</p>
-          <div class="row" style="margin-top:10px">
-            <div class="field">
-              <label for="proyecto">Proyecto *</label>
-              <select id="proyecto" name="proyecto" required>
-                <option value="">Cargando…</option>
-              </select>
-              <span class="hint">Se carga desde catálogo de proyectos.</span>
-            </div>
-            <div class="field">
-              <label for="sede">Sede</label>
-              <select id="sede" name="sede">
-                <option value="">(opcional)</option>
-              </select>
-            </div>
-          </div>
-          <div class="row">
-            <div class="field">
-              <label for="turno">Turno</label>
-              <select id="turno" name="turno">
-                <option value="">(opcional)</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="inicio_asig">Fecha inicio asignación</label>
-              <input id="inicio_asig" name="inicio_asig" type="date" />
-              <span class="hint">Si lo dejas vacío, el backend usará la fecha actual.</span>
-            </div>
-          </div>
-        </section>
+  <!-- Sidebar -->
+  <aside id="sidebar" class="sidebar">
+    <div class="logo">RR.HH. Suite</div>
+    <nav class="nav" aria-label="Navegación principal">
+      <div class="caption">Reclutamiento</div>
+      <a href="formularioweb.html">Formulario</a>
+      <!-- <a href="consulta.html">Consulta</a> -->
 
-        <div class="actions">
-          <button class="btn" type="submit">Guardar</button>
-          <button class="btn secondary" type="reset">Limpiar</button>
-          <span id="status" class="status"></span>
+      <div class="caption">Operación</div>
+      <a href="empleados.html" class="active" aria-current="page">Empleados</a>
+      <a href="contratos.html">Contratos</a>
+      <a href="nomina.html">Nómina</a>
+
+      <div class="sep"></div>
+      <div class="caption">Usuario / Configuración</div>
+      <a href="config.html">Parámetros de Empresa</a>
+    </nav>
+  </aside>
+  <div id="backdrop" class="menu-backdrop" tabindex="-1"></div>
+
+  <!-- Contenido principal -->
+  <main id="main" class="main" tabindex="-1">
+    <div class="page">
+      <!-- Header -->
+      <header class="page__header">
+        <div>
+          <h1 class="h1">Empleados</h1>
+          <p class="muted">Tarjetas con foto, nombre, documento, cargo y proyecto.</p>
         </div>
-      </form>
+        <button class="btn btn-primary" id="btn-nuevo">+ Nuevo empleado</button>
+      </header>
 
-      <!-- ===================== PANEL LATERAL (AYUDA) ===================== -->
-      <aside class="card" aria-label="Ayuda">
-        <h2>Cómo funciona</h2>
-        <ul style="margin:10px 0 0; padding-left:18px; color:var(--muted)">
-          <li>Valida requeridos en el cliente.</li>
-          <li>Carga catálogos de <strong>proyectos, sedes, turnos</strong> vía API.</li>
-          <li>Envía un <strong>POST /api/empleados/alta</strong> (JSON) con datos personales + asignación.</li>
-          <li>El backend inserta en <code>persons</code> y crea la asignación en <code>project_assignments</code>.</li>
-        </ul>
-        <p class="hint" style="margin-top:10px">Puedes cambiar las rutas de catálogo y de guardado en el bloque de JavaScript.</p>
-      </aside>
+      <!-- Toolbar -->
+      <section class="toolbar">
+        <div class="filters">
+          <button class="chip" data-filter="ALL">Todos</button>
+          <button class="chip" data-filter="ACTIVO">Activos</button>
+          <button class="chip" data-filter="EN_OBSERVACION">En observación</button>
+          <button class="chip" data-filter="INACTIVO">Inactivos</button>
+          <span class="muted hide-mobile" id="txt-total">0 empleados</span>
+        </div>
+
+        <div class="search">
+          <input id="input-search" type="search" placeholder="Buscar por nombre, DNI, cargo o proyecto..." />
+          <span class="search__icon">🔎</span>
+        </div>
+      </section>
+
+      <!-- Grid -->
+      <section id="grid" class="grid" aria-live="polite" aria-busy="false"></section>
+
+      <!-- Cargar más + sentinel -->
+      <div class="loadmore">
+        <button id="btn-load" class="btn" hidden>Cargar más</button>
+        <div id="sentinel" class="sentinel" aria-hidden="true"></div>
+      </div>
+
+      <!-- Template tarjeta -->
+      <template id="card-tpl">
+        <article class="card">
+          <div class="card__top">
+            <img class="avatar" alt="" loading="lazy" />
+            <div class="card__info">
+              <div class="card__name">
+                <h3 class="name"></h3>
+                <span class="pill"></span>
+              </div>
+              <p class="muted doc"></p>
+              <div class="kv">
+                <div><span class="k">Cargo:</span> <span class="v cargo"></span></div>
+                <div><span class="k">Proyecto:</span> <span class="v proyecto"></span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card__actions">
+            <button class="btn btn-ghost btn-view">Ver ficha</button>
+            <div class="status-actions">
+              <button class="btn btn-chip" data-status="ACTIVO">Activo</button>
+              <button class="btn btn-chip" data-status="EN_OBSERVACION">En observación</button>
+              <button class="btn btn-chip" data-status="INACTIVO">Inactivo</button>
+            </div>
+          </div>
+        </article>
+      </template>
+
+      <!-- Template skeleton -->
+      <template id="skeleton-tpl">
+        <article class="card skeleton">
+          <div class="card__top">
+            <div class="avatar sk"></div>
+            <div class="sk sk-lines">
+              <div class="sk sk-line"></div>
+              <div class="sk sk-line short"></div>
+              <div class="sk sk-line"></div>
+            </div>
+          </div>
+          <div class="card__actions">
+            <div class="sk sk-pill"></div>
+            <div class="sk sk-chips"></div>
+          </div>
+        </article>
+      </template>
+    </div>
+  </main>
+
+  <!-- Modal de ficha -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" hidden>
+    <div class="modal__panel">
+      <button class="modal__close" id="modalClose" aria-label="Cerrar">✕</button>
+      <div class="modal__header">
+        <img id="mFoto" class="avatar avatar--lg" alt="" />
+        <div>
+          <h2 id="modalTitle" class="modal__title"></h2>
+          <p id="mDoc" class="muted"></p>
+          <div class="pill" id="mPill"></div>
+        </div>
+      </div>
+
+      <div class="modal__body">
+        <div class="kv">
+          <div><span class="k">Cargo:</span> <span id="mCargo" class="v"></span></div>
+          <div><span class="k">Proyecto:</span> <span id="mProyecto" class="v"></span></div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <div class="status-actions">
+          <button class="btn btn-chip" data-status="ACTIVO">Activo</button>
+          <button class="btn btn-chip" data-status="EN_OBSERVACION">En observación</button>
+          <button class="btn btn-chip" data-status="INACTIVO">Inactivo</button>
+        </div>
+        <a id="mVerPerfil" class="btn btn-primary" href="#" target="_blank" rel="noopener">Ver perfil completo</a>
+      </div>
     </div>
   </div>
 
-  <script src="../js/empleados.js" defer></script>
+  <script type="module" src="../js/empleados.js"></script>
 </body>
 </html>
