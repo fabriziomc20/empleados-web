@@ -326,19 +326,28 @@ function closeModal(){
 
 // ===== Sidebar toggle =====
 function bindSidebarToggle(){
-  const menuBtn = $("#menuBtn");
-  const sidebar = $("#sidebar");
-  const backdrop = $("#backdrop");
-  if (!menuBtn || !sidebar || !backdrop) return;
+  const menuBtn  = document.getElementById("menuBtn");
+  const backdrop = document.getElementById("backdrop");
+  if (!menuBtn || !backdrop) return;
 
-  const open = () => { sidebar.classList.add("open"); backdrop.classList.add("show"); menuBtn.setAttribute("aria-expanded","true"); };
-  const close = () => { sidebar.classList.remove("open"); backdrop.classList.remove("show"); menuBtn.setAttribute("aria-expanded","false"); };
+  const open = () => {
+    document.body.classList.add("menu-open");          // <-- lo que tu CSS espera
+    menuBtn.setAttribute("aria-expanded", "true");
+  };
+  const close = () => {
+    document.body.classList.remove("menu-open");
+    menuBtn.setAttribute("aria-expanded", "false");
+  };
 
-  menuBtn.addEventListener("click", ()=>{
-    const expanded = menuBtn.getAttribute("aria-expanded")==="true";
+  menuBtn.addEventListener("click", () => {
+    const expanded = menuBtn.getAttribute("aria-expanded") === "true";
     expanded ? close() : open();
   });
+
   backdrop.addEventListener("click", close);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
 }
 
 // ===== Eventos base =====
