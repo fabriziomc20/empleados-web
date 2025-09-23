@@ -172,61 +172,77 @@ select:focus-visible{
   align-items:center;
   justify-content:center;
   background:rgba(0,0,0,.45);
+  backdrop-filter: blur(1px);
   z-index:120; /* por encima de otros modales */
 }
 #confirmDialog[hidden]{ display:none; }
 #confirmDialog .modal__panel{
   background:#fff;
   border-radius:14px;
-  width:min(420px, 92vw);
-  padding:18px;
-  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  width:min(460px, 92vw);
+  padding:20px 18px 14px;
+  box-shadow:0 14px 40px rgba(0,0,0,.18);
   animation:fadeInScale .2s ease;
+  position:relative;
 }
+/* Banda superior según variante */
+#confirmDialog .modal__panel::after{
+  content:"";
+  position:absolute; left:0; right:0; top:0; height:4px;
+  border-radius:14px 14px 0 0;
+  background: var(--brand);
+}
+#confirmDialog.danger .modal__panel::after{ background:#ef4444; }
+#confirmDialog.warning .modal__panel::after{ background:#f59e0b; }
+#confirmDialog.success .modal__panel::after{ background:#10b981; }
+
 #confirmDialog .modal__header{
   display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
 }
 #confirmDialog .modal__title{
-  font-size:1.05rem; font-weight:600; margin:0;
+  margin:0; font-size:1.05rem; font-weight:600;
+  display:flex; align-items:center; gap:8px;
 }
-#confirmDialog .confirm__message{
-  margin:0 0 14px; color:#374151; font-size:.95rem;
-}
-/* ==== ConfirmDialog: mejor contraste y contención del texto ==== */
-#confirmDialog .modal__panel{
-  padding: 20px 18px 14px;
-  box-shadow: 0 14px 40px rgba(0,0,0,.18);
-}
+/* Ícono del título por variante */
+#confirmDialog .modal__title::before{ content:"❓"; }
+#confirmDialog.danger  .modal__title::before{ content:"⚠️"; }
+#confirmDialog.warning .modal__title::before{ content:"⚠️"; }
+#confirmDialog.success .modal__title::before{ content:"✔️"; }
 
-#confirmDialog .modal__body{
-  margin: 8px 0 12px;
-}
+/* Color del título por variante (sutil) */
+#confirmDialog.danger  .modal__title{ color:#991b1b; }
+#confirmDialog.warning .modal__title{ color:#92400e; }
+#confirmDialog.success .modal__title{ color:#065f46; }
 
+/* Cuerpo del mensaje con buena legibilidad */
+#confirmDialog .modal__body{ margin:8px 0 12px; }
 #confirmDialog .confirm__message{
-  color:#111827;              /* más oscuro */
-  font-size: 0.975rem;        /* un pelín más grande */
-  line-height: 1.5;
-  background:#f9fafb;         /* caja suave para el texto */
+  color:#111827;
+  font-size:0.975rem;
+  line-height:1.5;
+  background:#f9fafb;
   border:1px solid #e5e7eb;
   border-radius:10px;
   padding:10px 12px;
 }
 
-/* Botonera con buen respiro y que no se monte al texto */
+/* Botonera */
 #confirmDialog .modal__footer{
   display:flex;
   gap:10px;
   justify-content:flex-end;
   flex-wrap:wrap;
 }
+#confirmDialog .modal__footer .btn{ min-width:120px; }
 
-#confirmDialog .modal__footer .btn{
-  min-width:120px;
-}
 @keyframes fadeInScale{
   from{ transform:scale(.92); opacity:0; }
   to{ transform:scale(1); opacity:1; }
 }
+
+/* Botón "warning" opcional (para En observación) */
+.btn-warning{ background:#f59e0b; color:#111827; }
+.btn-warning:hover{ background:#d97706; }
 
 /* ===================================================== */
 /* ================== FILTROS CONSULTA ================= */
@@ -561,6 +577,7 @@ select:focus-visible{
 @media (min-width: 1024px){ #grid.grid{ grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1280px){ #grid.grid{ grid-template-columns: repeat(4, 1fr); } }
 */
+
 
 
 
