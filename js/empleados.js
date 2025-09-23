@@ -103,6 +103,10 @@ const mVerPerfil = $("#mVerPerfil");
 // ===== Render =====
 function makeCard(emp){
   const node = tplCard.content.cloneNode(true);
+  const card = node.querySelector(".card");
+  card.dataset.id = emp.id;
+  card.setAttribute("aria-expanded", "false");
+
   const img = node.querySelector(".avatar");
   const name = node.querySelector(".name");
   const pill = node.querySelector(".pill");
@@ -111,6 +115,8 @@ function makeCard(emp){
   const proyecto = node.querySelector(".proyecto");
   const btnView = node.querySelector(".btn-view");
   const buttons = node.querySelectorAll(".btn-chip");
+  const toggleBtn = node.querySelector(".card__toggle") || node.querySelector(".card__top"); // fallback
+  const expand = node.querySelector(".card__expand");
 
   const fullName = `${emp.nombres} ${emp.apellidos}`;
   if (emp.fotoUrl){
@@ -130,18 +136,43 @@ function makeCard(emp){
   pill.textContent = st.label;
   pill.classList.add(st.pillCls);
 
-  btnView.addEventListener("click", () => openModal(emp.id));
+  // Ver ficha (modal rápido)
+  btnView.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    openModal(emp.id);
+  });
 
+  // Cambiar estado (chips)
   buttons.forEach(b=>{
     const ns = b.dataset.status;
     if (ns===emp.status) b.classList.add("btn-chip--active");
-    b.addEventListener("click", async ()=>{
+    b.addEventListener("click", async (ev)=>{
+      ev.stopPropagation();
       await changeStatus(emp.id, ns);
     });
   });
 
-  const art = node.querySelector(".card");
-  art.dataset.id = emp.id;
+  // Toggle expandir tarjeta (acordeón)
+  if (toggleBtn && expand){
+    toggleBtn.addEventListener("click", (e)=>{
+      e.preventDefault();
+      const open = card.classList.toggle("is-open");
+      card.setAttribute("aria-expanded", String(open));
+      expand.hidden = !open;
+    });
+  }
+
+  // Botones de área -> modales específicos
+  if (expand){
+    expand.querySelectorAll("[data-modal]").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        e.stopPropagation();
+        const type = btn.dataset.modal;  // 'datos' | 'contrato' | 'docs' | 'hist'
+        openSubModal(emp.id, type);
+      });
+    });
+  }
+
   return node;
 }
 
@@ -262,7 +293,7 @@ async function changeStatus(id, newStatus){
       });
     }
   }
-  // Modal
+  // Modal rápido (si estaba abierto)
   if (state.currentModalId===id){
     mPill.className = "pill";
     mPill.textContent = STATUS[newStatus].label;
@@ -277,7 +308,7 @@ async function changeStatus(id, newStatus){
   }
 }
 
-// ===== Modal =====
+// ===== Modal rápido (resumen) =====
 function openModal(id){
   const emp = state.items.find(e=>e.id===id);
   if (!emp) return;
@@ -324,6 +355,80 @@ function closeModal(){
   state.currentModalId = null;
 }
 
+// ===== Modal específico (Datos / Contrato / Documentos / Historial) =====
+function openSubModal(id, type){
+  const emp = state.items.find(e=>e.id===id);
+  if (!emp) return;
+
+  const titles = {
+    datos:    "Datos del empleado",
+    contrato: "Contrato",
+    docs:     "Documentos",
+    hist:     "Historial",
+  };
+
+  // Cabecera del modal
+  const fullName = `${emp.nombres} ${emp.apellidos}`;
+  mTitle.textContent = `${titles[type] || "Detalle"} – ${fullName}`;
+  mDoc.textContent = emp.documento;
+
+  // Foto y estado
+  if (emp.fotoUrl){
+    mFoto.src = emp.fotoUrl; mFoto.alt = fullName;
+    mFoto.classList.remove("avatar--placeholder");
+  } else {
+    mFoto.removeAttribute("src");
+    mFoto.alt = initials(fullName);
+    mFoto.classList.add("avatar--placeholder");
+    mFoto.setAttribute("data-initials", initials(fullName));
+  }
+  mPill.className = "pill";
+  mPill.textContent = STATUS[emp.status].label;
+  mPill.classList.add(STATUS[emp.status].pillCls);
+
+  // Cargar plantilla en el cuerpo del modal
+  const map = {
+    datos:    "#tpl-modal-datos",
+    contrato: "#tpl-modal-contrato",
+    docs:     "#tpl-modal-docs",
+    hist:     "#tpl-modal-hist",
+  };
+  const tplSel = map[type] || "#tpl-modal-datos";
+  const tpl = document.querySelector(tplSel);
+  const container = document.querySelector(".modal__body");
+  container.innerHTML = "";
+  container.appendChild(tpl.content.cloneNode(true));
+
+  // Pre-cargar valores según tipo
+  if (type === "datos"){
+    $("#md_apellidos").value = emp.apellidos || "";
+    $("#md_nombres").value   = emp.nombres || "";
+    $("#md_dni").value       = (emp.documento || "").replace(/^DNI\s*/i,"");
+    $("#md_proyecto").value  = emp.proyecto || "";
+    $("#md_cargo").value     = emp.cargo || "";
+  }
+
+  if (type === "hist"){
+    const tbody = $("#mh_tbody");
+    // Demo de historial (en real: fetch a /employees/:id/history)
+    const demo = [
+      {fecha:"2025-08-01", accion:"Alta", user:"RRHH", motivo:"Ingreso a Observación"},
+      {fecha:"2025-10-01", accion:"Cambio de estado", user:"RRHH", motivo:"Observación → Activo"},
+    ];
+    tbody.innerHTML = demo.map(r=>(
+      `<tr><td>${r.fecha}</td><td>${r.accion}</td><td>${r.user}</td><td>${r.motivo}</td></tr>`
+    )).join("");
+  }
+
+  // Enlace a perfil completo
+  mVerPerfil.href = `empleado.html?id=${encodeURIComponent(emp.id)}`;
+
+  // Abrir modal
+  modal.hidden = false;
+  modal.dataset.open = "true";
+  modalClose.focus();
+}
+
 // ===== Sidebar toggle =====
 function bindSidebarToggle(){
   const menuBtn  = document.getElementById("menuBtn");
@@ -352,7 +457,11 @@ function bindSidebarToggle(){
 
 // ===== Eventos base =====
 function bindBase(){
-  $("#btn-nuevo")?.addEventListener("click", ()=> alert("Abrir formulario de nuevo empleado (pendiente)"));
+  $("#btn-nuevo")?.addEventListener("click", ()=> {
+    // Redirige a un formulario completo (recomendado)
+    // window.location.href = "formularioweb.html";
+    alert("Abrir formulario de nuevo empleado (pendiente)");
+  });
   btnLoad.addEventListener("click", ()=> loadPage());
   modalClose.addEventListener("click", closeModal);
   document.addEventListener("keydown", (e)=>{
