@@ -163,7 +163,39 @@ select:focus-visible{
 .modal--sm{ max-width:460px; }
 .btn-danger{ background:#dc2626; color:#fff; }
 .btn-danger:hover{ background:#b91c1c; }
-#confirmDialog{ z-index:120; }
+
+/* ===== MODAL DE CONFIRMACIÓN (centrado) ===== */
+#confirmDialog{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.45);
+  z-index:120; /* por encima de otros modales */
+}
+#confirmDialog[hidden]{ display:none; }
+#confirmDialog .modal__panel{
+  background:#fff;
+  border-radius:14px;
+  width:min(420px, 92vw);
+  padding:18px;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);
+  animation:fadeInScale .2s ease;
+}
+#confirmDialog .modal__header{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px;
+}
+#confirmDialog .modal__title{
+  font-size:1.05rem; font-weight:600; margin:0;
+}
+#confirmDialog .confirm__message{
+  margin:0 0 14px; color:#374151; font-size:.95rem;
+}
+@keyframes fadeInScale{
+  from{ transform:scale(.92); opacity:0; }
+  to{ transform:scale(1); opacity:1; }
+}
 
 /* ===================================================== */
 /* ================== FILTROS CONSULTA ================= */
@@ -498,6 +530,7 @@ select:focus-visible{
 @media (min-width: 1024px){ #grid.grid{ grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1280px){ #grid.grid{ grid-template-columns: repeat(4, 1fr); } }
 */
+
 
 
 
