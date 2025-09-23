@@ -19,8 +19,86 @@ function initials(fullName) {
     .join("");
 }
 
+/* ---------- Diálogo de confirmación basado en HTML (reutilizable) ----------
+
+Requiere en el HTML el bloque:
+<div id="confirmDialog" class="modal" hidden>
+  <div class="modal__panel modal--sm">
+    <div class="modal__header">
+      <h2 id="confirmTitle" class="modal__title">Confirmar acción</h2>
+      <button class="modal__close" id="confirmClose" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal__body">
+      <p id="confirmMessage" class="confirm__message">¿Está seguro?</p>
+    </div>
+    <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+      <button id="confirmNo"  class="btn secondary">No, cancelar</button>
+      <button id="confirmYes" class="btn btn-danger">Sí, confirmar</button>
+    </div>
+  </div>
+</div>
+--------------------------------------------------------------------------- */
+
+async function confirmDialog(message, {
+  title = "Confirmar acción",
+  confirmText = "Sí, confirmar",
+  cancelText  = "No, cancelar",
+  danger = true
+} = {}) {
+  const dlg = document.getElementById("confirmDialog");
+  const msg = document.getElementById("confirmMessage");
+  const titleEl = document.getElementById("confirmTitle");
+  const btnYes = document.getElementById("confirmYes");
+  const btnNo  = document.getElementById("confirmNo");
+  const btnX   = document.getElementById("confirmClose");
+
+  // Si no existe el HTML, fallback nativo
+  if (!dlg || !msg || !titleEl || !btnYes || !btnNo || !btnX) {
+    return Promise.resolve(window.confirm(message));
+  }
+
+  titleEl.textContent = title;
+  msg.textContent = message;
+  btnYes.textContent = confirmText;
+  btnNo.textContent  = cancelText;
+  btnYes.classList.toggle("btn-danger", !!danger);
+
+  dlg.hidden = false;
+  dlg.dataset.open = "true";
+  btnYes.focus();
+
+  return new Promise((resolve) => {
+    const close = (val) => {
+      dlg.hidden = true;
+      dlg.dataset.open = "false";
+      btnYes.removeEventListener("click", onYes);
+      btnNo.removeEventListener("click", onNo);
+      btnX.removeEventListener("click", onNo);
+      document.removeEventListener("keydown", onKey);
+      dlg.removeEventListener("click", onBackdrop);
+      resolve(val);
+    };
+    const onYes = () => close(true);
+    const onNo  = () => close(false);
+    const onKey = (e) => { if (e.key === "Escape") close(false); };
+    const onBackdrop = (e) => { if (e.target === dlg) close(false); };
+
+    btnYes.addEventListener("click", onYes);
+    btnNo.addEventListener("click", onNo);
+    btnX.addEventListener("click", onNo);
+    document.addEventListener("keydown", onKey);
+    dlg.addEventListener("click", onBackdrop);
+  });
+}
+
+async function confirmStatusChange(emp, newStatus) {
+  return confirmDialog(
+    `¿Está seguro que desea cambiar el estado de "${emp.nombres} ${emp.apellidos}" a ${STATUS[newStatus].label}?`,
+    { title: "Confirmar cambio de estado", confirmText: "Sí, cambiar", cancelText: "No, cancelar", danger: true }
+  );
+}
+
 // ===== Mock de servidor (reemplaza por tu API real) =====
-// Genera ~96 empleados de ejemplo
 const MOCK_DB = (() => {
   const base = [
     ["María Fernanda","Soto Rivas","72653412","Operaria de Producción","Pastelería Rauleti – Línea Tortas","ACTIVO","https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?w=240&q=60&auto=format&fit=crop"],
@@ -41,7 +119,6 @@ const MOCK_DB = (() => {
 })();
 
 async function apiListEmployees({estado="ALL", q="", limit=PAGE_SIZE, offset=0}){
-  // Simula latencia
   await new Promise(r=>setTimeout(r, 280));
   const ql = q.trim().toLowerCase();
   let data = MOCK_DB.filter(e => estado==="ALL" ? true : e.status===estado);
@@ -60,7 +137,6 @@ async function apiListEmployees({estado="ALL", q="", limit=PAGE_SIZE, offset=0})
 }
 
 async function apiPatchStatus(id, nuevo_estado){
-  // Simulación rápida
   await new Promise(r=>setTimeout(r, 150));
   const idx = MOCK_DB.findIndex(e=>e.id===id);
   if (idx>=0) MOCK_DB[idx].status = nuevo_estado;
@@ -115,7 +191,7 @@ function makeCard(emp){
   const proyecto = node.querySelector(".proyecto");
   const btnView = node.querySelector(".btn-view");
   const buttons = node.querySelectorAll(".btn-chip");
-  const toggleBtn = node.querySelector(".card__toggle") || node.querySelector(".card__top"); // fallback
+  const toggleBtn = node.querySelector(".card__toggle") || node.querySelector(".card__top");
   const expand = node.querySelector(".card__expand");
 
   const fullName = `${emp.nombres} ${emp.apellidos}`;
@@ -136,18 +212,21 @@ function makeCard(emp){
   pill.textContent = st.label;
   pill.classList.add(st.pillCls);
 
-  // Ver ficha (modal rápido)
+  // Ver ficha
   btnView.addEventListener("click", (ev) => {
     ev.stopPropagation();
     openModal(emp.id);
   });
 
-  // Cambiar estado (chips)
+  // Cambiar estado (chips) con confirmación
   buttons.forEach(b=>{
     const ns = b.dataset.status;
     if (ns===emp.status) b.classList.add("btn-chip--active");
     b.addEventListener("click", async (ev)=>{
       ev.stopPropagation();
+      if (ns === emp.status) return;
+      const ok = await confirmStatusChange(emp, ns);
+      if (!ok) return;
       await changeStatus(emp.id, ns);
     });
   });
@@ -275,36 +354,58 @@ function bindSearch(){
 
 // ===== Cambios de estado =====
 async function changeStatus(id, newStatus){
-  // Optimista en UI (actualiza tarjeta y modal si corresponde)
   const idx = state.items.findIndex(e=>e.id===id);
-  if (idx>=0){
-    state.items[idx].status = newStatus;
-    // Actualiza solo esa tarjeta
-    const card = grid.querySelector(`.card[data-id="${id}"]`);
-    if (card){
-      // pill
-      const pill = card.querySelector(".pill");
-      pill.className = "pill"; // reset
-      pill.textContent = STATUS[newStatus].label;
-      pill.classList.add(STATUS[newStatus].pillCls);
-      // chips
-      card.querySelectorAll(".btn-chip").forEach(b=>{
-        b.classList.toggle("btn-chip--active", b.dataset.status===newStatus);
-      });
-    }
+  if (idx<0) return;
+  const current = state.items[idx].status;
+  if (current === newStatus) return;
+
+  // Optimista en UI
+  state.items[idx].status = newStatus;
+
+  const card = grid.querySelector(`.card[data-id="${id}"]`);
+  if (card){
+    const pill = card.querySelector(".pill");
+    pill.className = "pill";
+    pill.textContent = STATUS[newStatus].label;
+    pill.classList.add(STATUS[newStatus].pillCls);
+    card.querySelectorAll(".btn-chip").forEach(b=>{
+      b.classList.toggle("btn-chip--active", b.dataset.status===newStatus);
+    });
   }
-  // Modal rápido (si estaba abierto)
+
   if (state.currentModalId===id){
     mPill.className = "pill";
     mPill.textContent = STATUS[newStatus].label;
     mPill.classList.add(STATUS[newStatus].pillCls);
+    modal.querySelectorAll(".btn-chip").forEach(b=>{
+      b.classList.toggle("btn-chip--active", b.dataset.status===newStatus);
+    });
   }
 
-  // Llamada a API real
   try{
     await apiPatchStatus(id, newStatus);
   }catch(e){
     alert("No se pudo actualizar el estado en el servidor.");
+    // Rollback
+    state.items[idx].status = current;
+
+    if (card){
+      const pill = card.querySelector(".pill");
+      pill.className = "pill";
+      pill.textContent = STATUS[current].label;
+      pill.classList.add(STATUS[current].pillCls);
+      card.querySelectorAll(".btn-chip").forEach(b=>{
+        b.classList.toggle("btn-chip--active", b.dataset.status===current);
+      });
+    }
+    if (state.currentModalId===id){
+      mPill.className = "pill";
+      mPill.textContent = STATUS[current].label;
+      mPill.classList.add(STATUS[current].pillCls);
+      modal.querySelectorAll(".btn-chip").forEach(b=>{
+        b.classList.toggle("btn-chip--active", b.dataset.status===current);
+      });
+    }
   }
 }
 
@@ -334,14 +435,18 @@ function openModal(id){
   mPill.textContent = STATUS[emp.status].label;
   mPill.classList.add(STATUS[emp.status].pillCls);
 
-  // Botones de estado dentro del modal
+  // Botones de estado dentro del modal (con confirmación)
   modal.querySelectorAll(".btn-chip").forEach(b=>{
     const ns = b.dataset.status;
     b.classList.toggle("btn-chip--active", ns===emp.status);
-    b.onclick = ()=> changeStatus(emp.id, ns);
+    b.onclick = async () => {
+      if (ns === emp.status) return;
+      const ok = await confirmStatusChange(emp, ns);
+      if (!ok) return;
+      await changeStatus(emp.id, ns);
+    };
   });
 
-  // Enlace a perfil completo (ajusta a tu ruta real)
   mVerPerfil.href = `empleado.html?id=${encodeURIComponent(emp.id)}`;
 
   modal.hidden = false;
@@ -367,12 +472,10 @@ function openSubModal(id, type){
     hist:     "Historial",
   };
 
-  // Cabecera del modal
   const fullName = `${emp.nombres} ${emp.apellidos}`;
   mTitle.textContent = `${titles[type] || "Detalle"} – ${fullName}`;
   mDoc.textContent = emp.documento;
 
-  // Foto y estado
   if (emp.fotoUrl){
     mFoto.src = emp.fotoUrl; mFoto.alt = fullName;
     mFoto.classList.remove("avatar--placeholder");
@@ -386,7 +489,6 @@ function openSubModal(id, type){
   mPill.textContent = STATUS[emp.status].label;
   mPill.classList.add(STATUS[emp.status].pillCls);
 
-  // Cargar plantilla en el cuerpo del modal
   const map = {
     datos:    "#tpl-modal-datos",
     contrato: "#tpl-modal-contrato",
@@ -399,7 +501,6 @@ function openSubModal(id, type){
   container.innerHTML = "";
   container.appendChild(tpl.content.cloneNode(true));
 
-  // Pre-cargar valores según tipo
   if (type === "datos"){
     $("#md_apellidos").value = emp.apellidos || "";
     $("#md_nombres").value   = emp.nombres || "";
@@ -410,7 +511,6 @@ function openSubModal(id, type){
 
   if (type === "hist"){
     const tbody = $("#mh_tbody");
-    // Demo de historial (en real: fetch a /employees/:id/history)
     const demo = [
       {fecha:"2025-08-01", accion:"Alta", user:"RRHH", motivo:"Ingreso a Observación"},
       {fecha:"2025-10-01", accion:"Cambio de estado", user:"RRHH", motivo:"Observación → Activo"},
@@ -420,10 +520,8 @@ function openSubModal(id, type){
     )).join("");
   }
 
-  // Enlace a perfil completo
   mVerPerfil.href = `empleado.html?id=${encodeURIComponent(emp.id)}`;
 
-  // Abrir modal
   modal.hidden = false;
   modal.dataset.open = "true";
   modalClose.focus();
@@ -436,7 +534,7 @@ function bindSidebarToggle(){
   if (!menuBtn || !backdrop) return;
 
   const open = () => {
-    document.body.classList.add("menu-open");          // <-- lo que tu CSS espera
+    document.body.classList.add("menu-open");
     menuBtn.setAttribute("aria-expanded", "true");
   };
   const close = () => {
@@ -458,7 +556,6 @@ function bindSidebarToggle(){
 // ===== Eventos base =====
 function bindBase(){
   $("#btn-nuevo")?.addEventListener("click", ()=> {
-    // Redirige a un formulario completo (recomendado)
     // window.location.href = "formularioweb.html";
     alert("Abrir formulario de nuevo empleado (pendiente)");
   });
