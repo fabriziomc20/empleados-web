@@ -32,11 +32,29 @@ Requiere en el HTML el bloque:
     </div>
     <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
       <button id="confirmNo"  class="btn secondary">No, cancelar</button>
-      <button id="confirmYes" class="btn btn-danger">Sí, confirmar</button>
+      <button id="confirmYes" class="btn">Sí, confirmar</button>
     </div>
   </div>
 </div>
 --------------------------------------------------------------------------- */
+
+// Aplica variante visual al diálogo (danger|warning|success)
+function setConfirmVariant(variant = "danger") {
+  const dlg = document.getElementById("confirmDialog");
+  const btnYes = document.getElementById("confirmYes");
+  if (!dlg || !btnYes) return;
+
+  dlg.classList.remove("danger", "warning", "success");
+  if (["danger", "warning", "success"].includes(variant)) {
+    dlg.classList.add(variant);
+  }
+
+  // Botón "Sí": rojo (danger), ámbar (warning) o azul por defecto
+  btnYes.classList.remove("btn-danger", "btn-warning");
+  if (variant === "danger") btnYes.classList.add("btn-danger");
+  else if (variant === "warning") btnYes.classList.add("btn-warning");
+  // success -> sin clase especial, usa botón azul por defecto
+}
 
 async function confirmDialog(
   message,
@@ -44,7 +62,7 @@ async function confirmDialog(
     title = "Confirmar acción",
     confirmText = "Sí, confirmar",
     cancelText = "No, cancelar",
-    danger = true
+    variant = "danger", // <--- NUEVO
   } = {}
 ) {
   const dlg = document.getElementById("confirmDialog");
@@ -59,16 +77,18 @@ async function confirmDialog(
     return Promise.resolve(window.confirm(message));
   }
 
+  // Aplica la variante visual
+  setConfirmVariant(variant);
+
   titleEl.textContent = title;
   msg.textContent = message;
   btnYes.textContent = confirmText;
   btnNo.textContent  = cancelText;
-  btnYes.classList.toggle("btn-danger", !!danger);
 
   dlg.hidden = false;
   dlg.dataset.open = "true";
 
-  // Foco inicial en "No" para evitar confirmaciones accidentales con Enter
+  // Foco inicial en "No" para evitar enter accidentales
   btnNo.focus();
 
   return new Promise((resolve) => {
@@ -78,7 +98,7 @@ async function confirmDialog(
       btnYes.removeEventListener("click", onYes);
       btnNo.removeEventListener("click", onNo);
       btnX.removeEventListener("click", onNo);
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
       dlg.removeEventListener("click", onBackdrop);
       resolve(val);
     };
@@ -86,23 +106,39 @@ async function confirmDialog(
     const onNo  = () => close(false);
     const onKey = (e) => {
       if (e.key === "Escape") close(false);
-      if (e.key === "Enter")  close(true);
+      // Solo confirma con Enter si el foco está en el botón Sí
+      if (e.key === "Enter" && document.activeElement === btnYes) close(true);
     };
     const onBackdrop = (e) => { if (e.target === dlg) close(false); };
 
     btnYes.addEventListener("click", onYes);
     btnNo.addEventListener("click", onNo);
     btnX.addEventListener("click", onNo);
-    document.addEventListener("keydown", onKey, { capture: true });
+    document.addEventListener("keydown", onKey, true);
     dlg.addEventListener("click", onBackdrop);
   });
 }
 
+// Variante automática según estado destino
+function variantForStatus(newStatus) {
+  switch (newStatus) {
+    case "INACTIVO": return "danger";
+    case "EN_OBSERVACION": return "warning";
+    case "ACTIVO": default: return "success";
+  }
+}
+
 async function confirmStatusChange(emp, newStatus) {
   const next = STATUS[newStatus]?.label || newStatus;
+  const variant = variantForStatus(newStatus);
   return confirmDialog(
     `¿Está seguro que desea cambiar el estado de "${emp.nombres} ${emp.apellidos}" a ${next}?`,
-    { title: "Confirmar cambio de estado", confirmText: "Sí, cambiar", cancelText: "No, cancelar", danger: true }
+    {
+      title: "Confirmar cambio de estado",
+      confirmText: "Sí, cambiar",
+      cancelText: "No, cancelar",
+      variant
+    }
   );
 }
 
@@ -587,6 +623,7 @@ function bindBase(){
 
   await loadPage({reset:true});
 })();
+
 
 
   
