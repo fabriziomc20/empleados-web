@@ -20,7 +20,6 @@ function initials(fullName) {
 }
 
 /* ---------- Diálogo de confirmación basado en HTML (reutilizable) ----------
-
 Requiere en el HTML el bloque:
 <div id="confirmDialog" class="modal" hidden>
   <div class="modal__panel modal--sm">
@@ -39,12 +38,15 @@ Requiere en el HTML el bloque:
 </div>
 --------------------------------------------------------------------------- */
 
-async function confirmDialog(message, {
-  title = "Confirmar acción",
-  confirmText = "Sí, confirmar",
-  cancelText  = "No, cancelar",
-  danger = true
-} = {}) {
+async function confirmDialog(
+  message,
+  {
+    title = "Confirmar acción",
+    confirmText = "Sí, confirmar",
+    cancelText = "No, cancelar",
+    danger = true
+  } = {}
+) {
   const dlg = document.getElementById("confirmDialog");
   const msg = document.getElementById("confirmMessage");
   const titleEl = document.getElementById("confirmTitle");
@@ -65,7 +67,9 @@ async function confirmDialog(message, {
 
   dlg.hidden = false;
   dlg.dataset.open = "true";
-  btnYes.focus();
+
+  // Foco inicial en "No" para evitar confirmaciones accidentales con Enter
+  btnNo.focus();
 
   return new Promise((resolve) => {
     const close = (val) => {
@@ -80,20 +84,24 @@ async function confirmDialog(message, {
     };
     const onYes = () => close(true);
     const onNo  = () => close(false);
-    const onKey = (e) => { if (e.key === "Escape") close(false); };
+    const onKey = (e) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter")  close(true);
+    };
     const onBackdrop = (e) => { if (e.target === dlg) close(false); };
 
     btnYes.addEventListener("click", onYes);
     btnNo.addEventListener("click", onNo);
     btnX.addEventListener("click", onNo);
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, { capture: true });
     dlg.addEventListener("click", onBackdrop);
   });
 }
 
 async function confirmStatusChange(emp, newStatus) {
+  const next = STATUS[newStatus]?.label || newStatus;
   return confirmDialog(
-    `¿Está seguro que desea cambiar el estado de "${emp.nombres} ${emp.apellidos}" a ${STATUS[newStatus].label}?`,
+    `¿Está seguro que desea cambiar el estado de "${emp.nombres} ${emp.apellidos}" a ${next}?`,
     { title: "Confirmar cambio de estado", confirmText: "Sí, cambiar", cancelText: "No, cancelar", danger: true }
   );
 }
@@ -579,5 +587,6 @@ function bindBase(){
 
   await loadPage({reset:true});
 })();
+
 
   
