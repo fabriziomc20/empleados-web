@@ -192,6 +192,37 @@ select:focus-visible{
 #confirmDialog .confirm__message{
   margin:0 0 14px; color:#374151; font-size:.95rem;
 }
+/* ==== ConfirmDialog: mejor contraste y contención del texto ==== */
+#confirmDialog .modal__panel{
+  padding: 20px 18px 14px;
+  box-shadow: 0 14px 40px rgba(0,0,0,.18);
+}
+
+#confirmDialog .modal__body{
+  margin: 8px 0 12px;
+}
+
+#confirmDialog .confirm__message{
+  color:#111827;              /* más oscuro */
+  font-size: 0.975rem;        /* un pelín más grande */
+  line-height: 1.5;
+  background:#f9fafb;         /* caja suave para el texto */
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:10px 12px;
+}
+
+/* Botonera con buen respiro y que no se monte al texto */
+#confirmDialog .modal__footer{
+  display:flex;
+  gap:10px;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+
+#confirmDialog .modal__footer .btn{
+  min-width:120px;
+}
 @keyframes fadeInScale{
   from{ transform:scale(.92); opacity:0; }
   to{ transform:scale(1); opacity:1; }
