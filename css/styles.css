@@ -532,6 +532,138 @@ select:focus-visible{
   position:absolute; left:10px; top:50%;
   transform:translateY(-50%); opacity:.55; pointer-events:none;
 }
+/* ===================================================== */
+/* ========== EMPLEADOS (tarjetas y grilla nueva) ====== */
+/* ===================================================== */
+
+/* Página un poco más ancha para que quepan 4 tarjetas cómodas */
+.main .card,
+.main .page { max-width: 1280px; }
+
+/* Grilla específica de Empleados: 1–4 columnas automáticas */
+#grid.grid{
+  --card-min: 280px; /* ancho mínimo de cada tarjeta */
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  align-items: start;
+}
+
+/* Tarjeta compacta dentro de Empleados */
+#grid .card{
+  background: #fff;          /* fondo blanco limpio */
+  color: var(--text);        /* texto gris oscuro por defecto */
+  border-radius: 16px;
+  padding: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,.06);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+#grid .card:hover{
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+}
+
+/* Layout interno de la tarjeta */
+#grid .card__top{ display:flex; gap:12px; align-items:flex-start; }
+#grid .card__name{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+#grid .kv{ display:grid; gap:6px; margin-top:6px; }
+#grid .k{ display:inline-block; min-width:70px; color:var(--muted); font-size:13px; }
+#grid .v{ color:#374151; }
+
+/* Avatar con fallback a iniciales */
+#grid .avatar{
+  width:56px; height:56px; border-radius:12px;
+  object-fit:cover; border:1px solid rgba(0,0,0,.06);
+}
+#grid .avatar--lg{ width:64px; height:64px; }
+#grid .avatar--placeholder{ background:#eef2f7; position:relative; color:#475569; }
+#grid .avatar--placeholder::after{
+  content: attr(data-initials);
+  position:absolute; inset:0;
+  display:grid; place-items:center; font-weight:700;
+}
+
+/* ================== TIPOGRAFÍA ================== */
+#grid .card__name h3,
+#grid .name {
+  color: #111827;         /* nombre bien oscuro */
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+#grid .doc {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+#grid .cargo,
+#grid .proyecto {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+/* Pill de estado */
+#grid .pill{
+  display:inline-flex; align-items:center; gap:6px;
+  border-radius:999px; font-size:12px;
+  padding:3px 8px; border:1px solid transparent;
+}
+#grid .pill--green{  background:#e8f7ee; color:#166534; border-color:#bbf7d0; }
+#grid .pill--yellow{ background:#fff7df; color:#92400e; border-color:#fde68a; }
+#grid .pill--gray{   background:#f3f4f6; color:#374151; border-color:#e5e7eb; }
+
+/* Acciones de la tarjeta */
+#grid .card__actions{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:12px; gap:8px; flex-wrap:wrap;
+}
+
+/* Chips de cambio de estado */
+#grid .btn-chip{
+  background:#fff; color:#111827;
+  padding:6px 10px; border-radius:999px;
+  border:1px solid #e5e7eb; font-size:12px; cursor:pointer;
+}
+#grid .btn-chip--active{ background:#111827; color:#fff; border-color:#111827; }
+
+/* Botones extras (expandibles) */
+#grid .btn-pill{
+  background:#f3f4f6;
+  color:#111827;
+  border:none;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:13px;
+  cursor:pointer;
+  transition: background .2s;
+}
+#grid .btn-pill:hover{
+  background:#e5e7eb;
+}
+
+/* “No results” */
+#grid .empty{
+  border:1px dashed #e5e7eb; border-radius:16px;
+  padding:28px; text-align:center; color:#6b7280; background:#fff;
+}
+
+/* Barra de carga e infinito */
+.loadmore{ display:flex; justify-content:center; align-items:center; margin:16px 0; }
+.sentinel{ height:1px; width:100%; }
+
+/* Skeletons (tarjetas fantasma) */
+#grid .skeleton .sk{
+  background:linear-gradient(90deg,#eee,#f5f5f5,#eee);
+  background-size:200% 100%; animation:emp_pulse 1.2s infinite;
+}
+#grid .skeleton .sk-lines{ flex:1; }
+#grid .skeleton .sk-line{ height:10px; border-radius:6px; margin:6px 0; }
+#grid .skeleton .sk-line.short{ width:60%; }
+#grid .skeleton .sk-pill{ height:22px; width:120px; border-radius:999px; }
+#grid .skeleton .sk-chips{ height:28px; width:220px; border-radius:12px; }
+@keyframes emp_pulse{
+  0%{background-position:200% 0}
+  100%{background-position:-200% 0}
+}
 
 
 
