@@ -203,6 +203,19 @@
       </tbody>
     </table>
   </template>
+  
+  <!-- Backdrop y modal de confirmación centrado -->
+<div id="confirmBackdrop" class="confirm-backdrop" hidden></div>
+<div id="confirmDialog" class="confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
+  <div class="confirm-panel">
+    <h3 id="confirmTitle">¿Confirmar acción?</h3>
+    <p id="confirmMessage" class="confirm-message">¿Estás seguro que deseas continuar?</p>
+    <div class="confirm-actions">
+      <button id="confirmYes" class="btn btn-danger">Sí</button>
+      <button id="confirmNo" class="btn secondary">No</button>
+    </div>
+  </div>
+</div>
 
   <!-- ========== Diálogo de confirmación reutilizable (para cambio de estado) ========== -->
   <div id="confirmDialog" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle" hidden>
