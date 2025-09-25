@@ -19,41 +19,39 @@ function initials(fullName) {
     .join("");
 }
 
-/* ---------- Diálogo de confirmación basado en HTML (reutilizable) ----------
-Requiere en el HTML el bloque:
-<div id="confirmDialog" class="modal" hidden>
-  <div class="modal__panel modal--sm">
-    <div class="modal__header">
-      <h2 id="confirmTitle" class="modal__title">Confirmar acción</h2>
-      <button class="modal__close" id="confirmClose" aria-label="Cerrar">✕</button>
-    </div>
-    <div class="modal__body">
-      <p id="confirmMessage" class="confirm__message">¿Está seguro?</p>
-    </div>
-    <div class="modal__footer" style="display:flex; gap:8px; justify-content:flex-end;">
+/* ---------- Overlay de confirmación (reutilizable) ----------
+HTML requerido (ya en tu archivo):
+<div id="confirmOverlay" class="overlay" hidden>
+  <div class="confirm-card" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="confirm-icon" aria-hidden="true">!</div>
+    <h2 id="confirmTitle" class="confirm-title">Confirmar acción</h2>
+    <p id="confirmMessage" class="confirm-message">¿Está seguro?</p>
+    <div class="confirm-actions">
       <button id="confirmNo"  class="btn secondary">No, cancelar</button>
-      <button id="confirmYes" class="btn">Sí, confirmar</button>
+      <button id="confirmYes" class="btn btn-danger">Sí, confirmar</button>
     </div>
   </div>
 </div>
---------------------------------------------------------------------------- */
+------------------------------------------------------------ */
 
-// Aplica variante visual al diálogo (danger|warning|success)
+// Aplica variante visual al overlay (danger|warning|success)
 function setConfirmVariant(variant = "danger") {
-  const dlg = document.getElementById("confirmDialog");
+  const overlay = document.getElementById("confirmOverlay");
+  if (!overlay) return;
+  const card   = overlay.querySelector(".confirm-card");
   const btnYes = document.getElementById("confirmYes");
-  if (!dlg || !btnYes) return;
+  if (!card || !btnYes) return;
 
-  dlg.classList.remove("danger", "warning", "success");
+  card.classList.remove("danger", "warning", "success");
   if (["danger", "warning", "success"].includes(variant)) {
-    dlg.classList.add(variant);
+    card.classList.add(variant);
   }
 
-  // Botón "Sí": rojo (danger), ámbar (warning) o azul por defecto
+  // Botón "Sí": rojo (danger), ámbar (warning) o azul (success/defecto)
   btnYes.classList.remove("btn-danger", "btn-warning");
   if (variant === "danger") btnYes.classList.add("btn-danger");
   else if (variant === "warning") btnYes.classList.add("btn-warning");
-  // success -> sin clase especial, usa botón azul por defecto
+  // success -> botón azul por defecto (clase .btn normal)
 }
 
 async function confirmDialog(
@@ -62,60 +60,59 @@ async function confirmDialog(
     title = "Confirmar acción",
     confirmText = "Sí, confirmar",
     cancelText = "No, cancelar",
-    variant = "danger", // <--- NUEVO
+    variant = "danger",
   } = {}
 ) {
-  const dlg = document.getElementById("confirmDialog");
+  const overlay = document.getElementById("confirmOverlay");
   const msg = document.getElementById("confirmMessage");
   const titleEl = document.getElementById("confirmTitle");
   const btnYes = document.getElementById("confirmYes");
   const btnNo  = document.getElementById("confirmNo");
-  const btnX   = document.getElementById("confirmClose");
 
-  // Si no existe el HTML, fallback nativo
-  if (!dlg || !msg || !titleEl || !btnYes || !btnNo || !btnX) {
+  // Si no existe el HTML, usa confirm nativo
+  if (!overlay || !msg || !titleEl || !btnYes || !btnNo) {
     return Promise.resolve(window.confirm(message));
   }
 
-  // Aplica la variante visual
+  // Contenido + variante
   setConfirmVariant(variant);
-
   titleEl.textContent = title;
   msg.textContent = message;
   btnYes.textContent = confirmText;
   btnNo.textContent  = cancelText;
 
-  dlg.hidden = false;
-  dlg.dataset.open = "true";
+  // Mostrar overlay
+  overlay.hidden = false;
+  overlay.dataset.open = "true";
 
-  // Foco inicial en "No" para evitar enter accidentales
+  // Enfoque inicial en "No" para evitar enter accidentales
   btnNo.focus();
 
   return new Promise((resolve) => {
     const close = (val) => {
-      dlg.hidden = true;
-      dlg.dataset.open = "false";
+      overlay.hidden = true;
+      overlay.dataset.open = "false";
       btnYes.removeEventListener("click", onYes);
       btnNo.removeEventListener("click", onNo);
-      btnX.removeEventListener("click", onNo);
+      overlay.removeEventListener("click", onBackdrop);
       document.removeEventListener("keydown", onKey, true);
-      dlg.removeEventListener("click", onBackdrop);
       resolve(val);
     };
     const onYes = () => close(true);
     const onNo  = () => close(false);
+    const onBackdrop = (e) => {
+      // Cerrar si clic fuera de la tarjeta
+      if (e.target === overlay) close(false);
+    };
     const onKey = (e) => {
       if (e.key === "Escape") close(false);
-      // Solo confirma con Enter si el foco está en el botón Sí
       if (e.key === "Enter" && document.activeElement === btnYes) close(true);
     };
-    const onBackdrop = (e) => { if (e.target === dlg) close(false); };
 
     btnYes.addEventListener("click", onYes);
     btnNo.addEventListener("click", onNo);
-    btnX.addEventListener("click", onNo);
+    overlay.addEventListener("click", onBackdrop);
     document.addEventListener("keydown", onKey, true);
-    dlg.addEventListener("click", onBackdrop);
   });
 }
 
@@ -623,6 +620,7 @@ function bindBase(){
 
   await loadPage({reset:true});
 })();
+
 
 
 
