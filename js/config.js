@@ -16,112 +16,174 @@ function clearMsg(){
 // Mostrar errores JS arriba
 window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
 
-// ===== CONFIG API =====
-const API_BASE = "https://empleados-api-o6yy.onrender.com";
-const EMP = `${API_BASE}/api/employer`;
-const TAX_REGIMES = `${API_BASE}/api/regimes/tax`;
-const EMP_TAX = `${API_BASE}/api/employer/tax`;
-const EMP_TAX_HISTORY = `${API_BASE}/api/employer/tax/history`;
-const SITES = `${API_BASE}/api/sites`;
-const PROJECTS = `${API_BASE}/api/projects`;
-const SHIFTS = `${API_BASE}/api/shifts`;
+// ===== Helpers Supabase =====
+function sbGuard(res){
+  if(res.error) throw res.error;
+  return res.data ?? null;
+}
+function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-// ===== Data funcs =====
+// ===== Data funcs (Supabase) =====
+
+// EMPRESA
 async function loadEmployer(){
   clearMsg();
-  const res = await fetch(EMP);
-  if(!res.ok) throw new Error(`${res.status}`);
-  const data = await res.json();
-  const empRuc = document.getElementById('empRuc');
+  const { data, error } = await supabase
+    .from('employers')
+    .select('id,ruc,name,logo_url')
+    .order('id', { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if(error) throw error;
+
+  const empRuc  = document.getElementById('empRuc');
   const empName = document.getElementById('empName');
   const empLogo = document.getElementById('empLogo');
+
   if(!data){ showMsg('ok','No hay empresa registrada aún.'); return; }
-  if(empRuc) empRuc.value = data.ruc || '';
+  if(empRuc)  empRuc.value  = data.ruc || '';
   if(empName) empName.value = data.name || '';
   if(empLogo) empLogo.value = data.logo_url || '';
   showMsg('ok','Empresa cargada.');
 }
+
 async function saveEmployer(){
   clearMsg();
-  const empRuc = document.getElementById('empRuc');
+  const empRuc  = document.getElementById('empRuc');
   const empName = document.getElementById('empName');
   const empLogo = document.getElementById('empLogo');
-  const body = {
-    ruc: empRuc?.value.trim(),
-    name: empName?.value.trim(),
-    logo_url: (empLogo?.value.trim() || null)
+  const payload = {
+    ruc: empRuc?.value?.trim(),
+    name: empName?.value?.trim(),
+    logo_url: (empLogo?.value?.trim() || null)
   };
-  const res = await fetch(EMP, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+  // upsert por RUC (requiere unique en ruc)
+  const { error } = await supabase
+    .from('employers')
+    .upsert(payload, { onConflict: 'ruc' });
+  if(error) throw error;
   showMsg('ok','Empresa guardada/actualizada.');
 }
 
+// RÉGIMEN TRIBUTARIO (catálogo / actual / historial / guardar vía RPC)
 async function loadTaxRegimes(){
-  const res = await fetch(TAX_REGIMES);
-  const data = res.ok ? await res.json() : [];
+  const { data, error } = await supabase
+    .from('regimes_tax')
+    .select('code,name')
+    .order('name', { ascending: true });
+  if(error) throw error;
+
   const taxRegime = document.getElementById('taxRegime');
-  if(taxRegime) taxRegime.innerHTML = data.map(r => `<option value="${r.code}">${r.name}</option>`).join('');
+  if(taxRegime){
+    taxRegime.innerHTML = (data||[])
+      .map(r => `<option value="${r.code}">${r.name}</option>`)
+      .join('');
+  }
 }
+
 async function loadCurrentTax(){
-  const res = await fetch(EMP_TAX);
-  if(!res.ok) return;
-  const cur = await res.json();
+  // último con valid_to = null (vigente)
+  const { data, error } = await supabase
+    .from('employer_tax_history')
+    .select('valid_from, valid_to, regimes_tax ( code, name )')
+    .eq('valid_to', null)
+    .order('valid_from', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if(error) throw error;
+
+  const cur = data
+    ? { code: data.regimes_tax?.code, name: data.regimes_tax?.name, valid_from: data.valid_from }
+    : null;
+
   const taxCurrent = document.getElementById('taxCurrent');
-  const taxRegime = document.getElementById('taxRegime');
-  if(taxCurrent) taxCurrent.textContent = cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
-  if(cur && taxRegime){ taxRegime.value = cur.code; }
+  const taxRegime  = document.getElementById('taxRegime');
+  if(taxCurrent) taxCurrent.textContent =
+    cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
+  if(cur && taxRegime) taxRegime.value = cur.code;
 }
+
 async function loadTaxHistory(){
-  const res = await fetch(EMP_TAX_HISTORY);
-  return res.ok ? await res.json() : [];
+  const { data, error } = await supabase
+    .from('employer_tax_history')
+    .select('id, valid_from, valid_to, regimes_tax ( code, name )')
+    .order('valid_from', { ascending: false });
+  if(error) throw error;
+
+  // aplanar para la tabla del modal
+  return (data||[]).map(r => ({
+    id: r.id,
+    code: r.regimes_tax?.code,
+    name: r.regimes_tax?.name,
+    valid_from: r.valid_from,
+    valid_to: r.valid_to
+  }));
 }
+
 async function saveEmployerTax(){
   clearMsg();
-  const taxRegime = document.getElementById('taxRegime');
+  const taxRegime    = document.getElementById('taxRegime');
   const taxValidFrom = document.getElementById('taxValidFrom');
-  const body = {
+  const vfrom = (taxValidFrom?.value || todayISO());
+
+  // RPC con versionado (definida en tu SQL)
+  const { data, error } = await supabase.rpc('set_employer_regime', {
     regime_code: taxRegime?.value,
-    valid_from: (taxValidFrom?.value || new Date().toISOString().slice(0,10))
-  };
-  const res = await fetch(EMP_TAX, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
-  if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+    vfrom
+  });
+  if(error) throw error;
+
   showMsg('ok', 'Régimen actualizado.');
   await loadCurrentTax();
 }
 
-// ===== List reloads =====
-async function reloadSites(){ const r=await fetch(SITES); if(!r.ok) throw new Error(`${r.status}`); window._sitesCached=await r.json(); }
-async function reloadProjects(){ try{ const r=await fetch(PROJECTS); window._projectsCached=r.ok?await r.json():[] }catch{} }
-async function reloadShifts(){ try{ const r=await fetch(SHIFTS); window._shiftsCached=r.ok?await r.json():[] }catch{} }
+// ===== List reloads (Sedes / Proyectos / Turnos)
+async function reloadSites(){
+  const { data, error } = await supabase
+    .from('sites')
+    .select('id, code, name')
+    .order('id', { ascending: true });
+  if(error) throw error;
+  window._sitesCached = data || [];
+}
+async function reloadProjects(){
+  const { data } = await supabase
+    .from('projects')
+    .select('id, code, name')
+    .order('id', { ascending: true });
+  window._projectsCached = data || [];
+}
+async function reloadShifts(){
+  const { data } = await supabase
+    .from('shifts')
+    .select('id, name, start_time, end_time')
+    .order('id', { ascending: true });
+  window._shiftsCached = data || [];
+}
 
 // ===== Modal genérico =====
 let modalState = { items:[], page:1, perPage:10, kind:"", columns:[] };
 
 // Botón de acciones por tipo
 function actionButtons(kind, it){
-  // Historial de régimen: solo "ver detalle" (sin editar/eliminar)
   if(kind === 'tax'){
     return `
       <button class="secondary" title="Ver detalle" aria-label="Ver detalle"
               onclick="viewRecord('${kind}', ${it.id})">
-        <!-- Ícono ojo -->
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" stroke="currentColor" stroke-width="2" />
           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
         </svg>
       </button>`;
   }
-  // Sedes/Proyectos/Turnos: Editar + Eliminar
   return `
     <button title="Editar" aria-label="Editar" onclick="modalEdit('${kind}', ${it.id})">
-      <!-- Ícono lápiz -->
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Z" stroke="currentColor" stroke-width="2"/>
         <path d="M14.06 4.94l3.75 3.75" stroke="currentColor" stroke-width="2"/>
       </svg>
     </button>
     <button class="secondary" title="Eliminar" aria-label="Eliminar" onclick="modalDelete('${kind}', ${it.id})">
-      <!-- Ícono papelera -->
       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path d="M3 6h18" stroke="currentColor" stroke-width="2"/>
         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="currentColor" stroke-width="2"/>
@@ -190,67 +252,75 @@ function viewRecord(kind, id){
 }
 window.viewRecord = viewRecord;
 
+// Editar (Sites / Projects / Shifts)
 async function modalEdit(kind, id){
   if(kind==="sites"){
     const row = (window._sitesCached||[]).find(x=>x.id===id);
     const nuevo = prompt("Nuevo nombre de sede:", row?.name || "");
     if(nuevo===null) return;
-    const res = await fetch(`${SITES}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: nuevo }) });
-    if(res.ok){ await reloadSites(); await openSitesModal(); }
+    const { error } = await supabase.from('sites').update({ name: nuevo }).eq('id', id);
+    if(!error){ await reloadSites(); await openSitesModal(); }
+    else alert(error.message);
   }else if(kind==="projects"){
     const row = (window._projectsCached||[]).find(x=>x.id===id);
     const nuevo = prompt("Nuevo nombre de proyecto:", row?.name || "");
     if(nuevo===null) return;
-    const payload = { name: nuevo };
-    const res = await fetch(`${PROJECTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    if(res.ok){ await reloadProjects(); await openProjectsModal(); }
+    const { error } = await supabase.from('projects').update({ name: nuevo }).eq('id', id);
+    if(!error){ await reloadProjects(); await openProjectsModal(); }
+    else alert(error.message);
   }else if(kind==="shifts"){
     const row = (window._shiftsCached||[]).find(x=>x.id===id);
     const nuevo = prompt("Nuevo nombre del turno:", row?.name || "");
     if(nuevo===null) return;
-    const res = await fetch(`${SHIFTS}/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: nuevo }) });
-    if(res.ok){ await reloadShifts(); await openShiftsModal(); }
+    const { error } = await supabase.from('shifts').update({ name: nuevo }).eq('id', id);
+    if(!error){ await reloadShifts(); await openShiftsModal(); }
+    else alert(error.message);
   }
 }
 window.modalEdit = modalEdit;
 
+// Eliminar
 async function modalDelete(kind, id){
-  if(kind==='tax'){ return; } // seguridad extra: no se elimina historial
+  if(kind==='tax'){ return; } // seguridad: no se elimina historial
   if(!confirm("¿Eliminar?")) return;
-  let url="";
-  if(kind==="sites") url=`${SITES}/${id}`;
-  if(kind==="projects") url=`${PROJECTS}/${id}`;
-  if(kind==="shifts") url=`${SHIFTS}/${id}`;
-  const r = await fetch(url, { method:'DELETE' });
-  if(!r.ok){ alert("No se pudo eliminar (puede estar referenciado)."); return; }
+
+  let table = null;
+  if(kind==="sites")    table = 'sites';
+  if(kind==="projects") table = 'projects';
+  if(kind==="shifts")   table = 'shifts';
+
+  const { error } = await supabase.from(table).delete().eq('id', id);
+  if(error){ alert("No se pudo eliminar: " + error.message); return; }
+
   if(kind==="sites"){ await reloadSites(); await openSitesModal(); }
   if(kind==="projects"){ await reloadProjects(); await openProjectsModal(); }
   if(kind==="shifts"){ await reloadShifts(); await openShiftsModal(); }
 }
 window.modalDelete = modalDelete;
 
+// Abrir modales (carga directa desde BD)
 async function openSitesModal(){
-  const res = await fetch(SITES); const data = res.ok ? await res.json() : [];
-  window._sitesCached = data;
-  openModal("Sedes", data, [
+  const { data } = await supabase.from('sites').select('id,code,name').order('id',{ascending:true});
+  window._sitesCached = data || [];
+  openModal("Sedes", window._sitesCached, [
     { header:"ID", field:"id" },
     { header:"Código", field:"code" },
     { header:"Nombre", field:"name" },
   ], "sites");
 }
 async function openProjectsModal(){
-  const res = await fetch(PROJECTS); const data = res.ok ? await res.json() : [];
-  window._projectsCached = data;
-  openModal("Proyectos", data, [
+  const { data } = await supabase.from('projects').select('id,code,name').order('id',{ascending:true});
+  window._projectsCached = data || [];
+  openModal("Proyectos", window._projectsCached, [
     { header:"ID", field:"id" },
     { header:"Código", field:"code" },
     { header:"Nombre", field:"name" },
   ], "projects");
 }
 async function openShiftsModal(){
-  const res = await fetch(SHIFTS); const data = res.ok ? await res.json() : [];
-  window._shiftsCached = data;
-  openModal("Turnos", data, [
+  const { data } = await supabase.from('shifts').select('id,name,start_time,end_time').order('id',{ascending:true});
+  window._shiftsCached = data || [];
+  openModal("Turnos", window._shiftsCached, [
     { header:"ID", field:"id" },
     { header:"Nombre", field:"name" },
     { header:"Inicio", field:"start_time" },
@@ -291,41 +361,40 @@ window.addEventListener('DOMContentLoaded', async () => {
   const $ = (id)=>document.getElementById(id);
   $('btnEmpCargar')   && $('btnEmpCargar').addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
   $('btnEmpGuardar')  && $('btnEmpGuardar').addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
-  // Eliminado: listener de btnTaxReload
   $('btnTaxSave')     && $('btnTaxSave').addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
   $('btnTaxHistory')  && $('btnTaxHistory').addEventListener('click', ()=> window.openTaxHistoryModal());
 
-  $('btnSiteAdd')     && $('btnSiteAdd').addEventListener('click', async ()=>{
+  $('btnSiteAdd') && $('btnSiteAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const name = $('siteName')?.value.trim();
-      const res = await fetch(SITES, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
-      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      const name = $('siteName')?.value?.trim();
+      const { error } = await supabase.from('sites').insert({ name });
+      if(error) throw error;
       if($('siteName')) $('siteName').value='';
       showMsg('ok','Sede creada.'); await reloadSites();
     }catch(e){ showMsg('err',`Error al crear sede: ${e.message}`); }
   });
 
-  $('btnProjAdd')     && $('btnProjAdd').addEventListener('click', async ()=>{
+  $('btnProjAdd') && $('btnProjAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const name = $('projName')?.value.trim();
+      const name = $('projName')?.value?.trim();
       if(!name) throw new Error("Completa el nombre del proyecto");
-      const res = await fetch(PROJECTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
-      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      const { error } = await supabase.from('projects').insert({ name });
+      if(error) throw error;
       if($('projName')) $('projName').value='';
       showMsg('ok','Proyecto creado.'); await reloadProjects();
     }catch(e){ showMsg('err',`Error al crear proyecto: ${e.message}`); }
   });
 
-  $('btnShiftAdd')    && $('btnShiftAdd').addEventListener('click', async ()=>{
+  $('btnShiftAdd') && $('btnShiftAdd').addEventListener('click', async ()=>{
     try{
       clearMsg();
-      const name  = $('shiftName')?.value.trim();
+      const name  = $('shiftName')?.value?.trim();
       const start = $('shiftStart')?.value;
       const end   = $('shiftEnd')?.value;
-      const res = await fetch(SHIFTS, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name, start_time:start, end_time:end }) });
-      if(!res.ok){ const t=await res.text(); throw new Error(`${res.status} ${t}`); }
+      const { error } = await supabase.from('shifts').insert({ name, start_time:start, end_time:end });
+      if(error) throw error;
       if($('shiftName')) $('shiftName').value='';
       showMsg('ok','Turno creado.'); await reloadShifts();
     }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
@@ -335,7 +404,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try{ await loadEmployer(); }catch{}
   try{
     const taxValidFrom = $('taxValidFrom');
-    if(taxValidFrom) taxValidFrom.value = new Date().toISOString().slice(0,10);
+    if(taxValidFrom) taxValidFrom.value = todayISO();
     await loadTaxRegimes();
     await loadCurrentTax();
   }catch(e){ showMsg('err', e.message); }
@@ -344,6 +413,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   await reloadShifts();
 });
 
+// ===== Menú lateral =====
 function closeMenu(){
   document.body.classList.remove('menu-open');
   document.getElementById('menuBtn').setAttribute('aria-expanded','false');
@@ -358,3 +428,4 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 });
+
