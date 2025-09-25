@@ -23,19 +23,27 @@ function sbGuard(res){
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-// Normaliza el valor de un <input type="date"> a YYYY-MM-DD (o null si vacío)
+// Normaliza el valor de un <input type="date"> a YYYY-MM-DD (o null si vacío/incorrecto)
 function normalizeDateInput(inputEl){
-  const v = inputEl?.value?.trim();
-  if(!v) return null; // sin fecha -> deja que la RPC use su default
+  let v = (inputEl && typeof inputEl.value === 'string') ? inputEl.value.trim() : '';
+  if(!v) return null;
+
+  // Evitar cadenas literales no válidas
+  if (v.toLowerCase() === 'null' || v.toLowerCase() === 'undefined') return null;
 
   // dd/mm/yyyy -> yyyy-mm-dd
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if(m){
-    const [_, d, mm, y] = m;
+  if (m) {
+    const [, d, mm, y] = m;
     return `${y}-${mm}-${d}`;
   }
-  // La mayoría de navegadores ya dan yyyy-mm-dd
-  return v;
+
+  // yyyy-mm-dd (estándar de <input type="date">)
+  const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m2) return v;
+
+  // Cualquier otra cosa: inválido
+  return null;
 }
 
 // ===== Data funcs (Supabase) =====
@@ -100,7 +108,7 @@ async function loadCurrentTax(){
   const { data, error } = await supabase
     .from('employer_tax_history')
     .select('valid_from, valid_to, regimes_tax ( code, name )')
-    .eq('valid_to', null)
+    .is('valid_to', null)
     .order('valid_from', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -147,12 +155,14 @@ async function saveEmployerTax(){
 
   const v = normalizeDateInput(taxValidFrom);
 
-  // Armar args: si no hay fecha, NO la mandamos (la RPC usará current_date)
+  // Construir args: si no hay fecha válida, NO mandamos vfrom (RPC usa current_date)
   const args = { regime_code: taxRegime?.value };
   if (v) args.vfrom = v;
 
-  // RPC con versionado (definida en tu SQL)
-  const { data, error } = await supabase.rpc('set_employer_regime', args);
+  // Útil para depurar si hiciera falta
+  // console.log('RPC set_employer_regime args:', args);
+
+  const { error } = await supabase.rpc('set_employer_regime', args);
   if(error) throw error;
 
   showMsg('ok', 'Régimen actualizado.');
@@ -169,17 +179,19 @@ async function reloadSites(){
   window._sitesCached = data || [];
 }
 async function reloadProjects(){
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('projects')
     .select('id, code, name')
     .order('id', { ascending: true });
+  if(error) throw error;
   window._projectsCached = data || [];
 }
 async function reloadShifts(){
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('shifts')
     .select('id, name, start_time, end_time')
     .order('id', { ascending: true });
+  if(error) throw error;
   window._shiftsCached = data || [];
 }
 
@@ -322,7 +334,8 @@ window.modalDelete = modalDelete;
 
 // Abrir modales (carga directa desde BD)
 async function openSitesModal(){
-  const { data } = await supabase.from('sites').select('id,code,name').order('id',{ascending:true});
+  const { data, error } = await supabase.from('sites').select('id,code,name').order('id',{ascending:true});
+  if(error) { alert(error.message); return; }
   window._sitesCached = data || [];
   openModal("Sedes", window._sitesCached, [
     { header:"ID", field:"id" },
@@ -331,7 +344,8 @@ async function openSitesModal(){
   ], "sites");
 }
 async function openProjectsModal(){
-  const { data } = await supabase.from('projects').select('id,code,name').order('id',{ascending:true});
+  const { data, error } = await supabase.from('projects').select('id,code,name').order('id',{ascending:true});
+  if(error) { alert(error.message); return; }
   window._projectsCached = data || [];
   openModal("Proyectos", window._projectsCached, [
     { header:"ID", field:"id" },
@@ -340,7 +354,8 @@ async function openProjectsModal(){
   ], "projects");
 }
 async function openShiftsModal(){
-  const { data } = await supabase.from('shifts').select('id,name,start_time,end_time').order('id',{ascending:true});
+  const { data, error } = await supabase.from('shifts').select('id,name,start_time,end_time').order('id',{ascending:true});
+  if(error) { alert(error.message); return; }
   window._shiftsCached = data || [];
   openModal("Turnos", window._shiftsCached, [
     { header:"ID", field:"id" },
@@ -426,7 +441,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   try{ await loadEmployer(); }catch{}
   try{
     const taxValidFrom = $('taxValidFrom');
-    if(taxValidFrom) taxValidFrom.value = todayISO();
+    if(taxValidFrom) taxValidFrom.value = todayISO(); // se sobreescribe si hay vigente
     await loadTaxRegimes();
     await loadCurrentTax();
   }catch(e){ showMsg('err', e.message); }
@@ -450,5 +465,6 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 });
+
 
 
