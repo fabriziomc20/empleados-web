@@ -82,7 +82,6 @@ async function loadTaxRegimes(){
 }
 
 async function loadCurrentTax(){
-  // último con valid_to = null (vigente)
   const { data, error } = await supabase
     .from('employer_tax_history')
     .select('valid_from, valid_to, regimes_tax ( code, name )')
@@ -96,11 +95,17 @@ async function loadCurrentTax(){
     ? { code: data.regimes_tax?.code, name: data.regimes_tax?.name, valid_from: data.valid_from }
     : null;
 
-  const taxCurrent = document.getElementById('taxCurrent');
-  const taxRegime  = document.getElementById('taxRegime');
-  if(taxCurrent) taxCurrent.textContent =
-    cur ? `Actual: ${cur.name} (desde ${cur.valid_from})` : 'Sin régimen vigente.';
-  if(cur && taxRegime) taxRegime.value = cur.code;
+  const taxCurrent   = document.getElementById('taxCurrent');
+  const taxRegime    = document.getElementById('taxRegime');
+  const taxValidFrom = document.getElementById('taxValidFrom');
+
+  if (taxCurrent) {
+    taxCurrent.textContent = cur
+      ? `Actual: ${cur.name} (desde ${cur.valid_from})`
+      : 'Sin régimen vigente.';
+  }
+  if (cur && taxRegime)    taxRegime.value    = cur.code;
+  if (cur && taxValidFrom) taxValidFrom.value = cur.valid_from;  // 👈 aquí el fix
 }
 
 async function loadTaxHistory(){
