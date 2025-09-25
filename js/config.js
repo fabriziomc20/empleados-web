@@ -23,6 +23,21 @@ function sbGuard(res){
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
+// Normaliza el valor de un <input type="date"> a YYYY-MM-DD (o null si vacío)
+function normalizeDateInput(inputEl){
+  const v = inputEl?.value?.trim();
+  if(!v) return null; // sin fecha -> deja que la RPC use su default
+
+  // dd/mm/yyyy -> yyyy-mm-dd
+  const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m){
+    const [_, d, mm, y] = m;
+    return `${y}-${mm}-${d}`;
+  }
+  // La mayoría de navegadores ya dan yyyy-mm-dd
+  return v;
+}
+
 // ===== Data funcs (Supabase) =====
 
 // EMPRESA
@@ -105,7 +120,7 @@ async function loadCurrentTax(){
       : 'Sin régimen vigente.';
   }
   if (cur && taxRegime)    taxRegime.value    = cur.code;
-  if (cur && taxValidFrom) taxValidFrom.value = cur.valid_from;  // 👈 aquí el fix
+  if (cur && taxValidFrom) taxValidFrom.value = cur.valid_from;  // asegura misma fecha para UPDATE
 }
 
 async function loadTaxHistory(){
@@ -129,13 +144,15 @@ async function saveEmployerTax(){
   clearMsg();
   const taxRegime    = document.getElementById('taxRegime');
   const taxValidFrom = document.getElementById('taxValidFrom');
-  const vfrom = (taxValidFrom?.value || todayISO());
+
+  const v = normalizeDateInput(taxValidFrom);
+
+  // Armar args: si no hay fecha, NO la mandamos (la RPC usará current_date)
+  const args = { regime_code: taxRegime?.value };
+  if (v) args.vfrom = v;
 
   // RPC con versionado (definida en tu SQL)
-  const { data, error } = await supabase.rpc('set_employer_regime', {
-    regime_code: taxRegime?.value,
-    vfrom
-  });
+  const { data, error } = await supabase.rpc('set_employer_regime', args);
   if(error) throw error;
 
   showMsg('ok', 'Régimen actualizado.');
@@ -433,4 +450,5 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 });
+
 
