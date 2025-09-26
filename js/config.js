@@ -1,9 +1,9 @@
 // =========================
-// js/config.js (ultra-blindado)
+// js/config.js (robusto y encapsulado)
 // =========================
 
-// Detecta si estamos en config.html (elementos exclusivos de esa página)
-const IS_CONFIG_PAGE = !!document.getElementById('btnTaxSave') || !!document.getElementById('taxRegime');
+// 1) Solo corre en config.html
+const IS_CONFIG_PAGE = /\/config\.html(\?|$)/.test(location.pathname);
 
 // ===== Menú lateral (seguro en cualquier página) =====
 function closeMenu(){
@@ -11,7 +11,7 @@ function closeMenu(){
   const btn = document.getElementById('menuBtn');
   btn && btn.setAttribute('aria-expanded','false');
 }
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', ()=>{
   const btn=document.getElementById('menuBtn');
   const backdrop=document.getElementById('backdrop');
   btn?.addEventListener('click',()=>{
@@ -23,11 +23,11 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 // =========================
-// TODO LO DEMÁS SOLO EN config.html
+// Todo lo que toca BD, solo en config.html
 // =========================
 if (IS_CONFIG_PAGE) {
 
-  // ===== Helpers UI =====
+  // ---- Helpers UI ----
   function showMsg(type, text){
     const box = document.getElementById('msg');
     if(!box) return;
@@ -42,20 +42,20 @@ if (IS_CONFIG_PAGE) {
     box.textContent = '';
     box.className = '';
   }
-  // Solo en config: banner de errores JS
+  // Banner de errores JS (solo aquí)
   window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
 
-  // ===== Helpers Supabase/fecha =====
+  // ---- Helpers de fecha ----
   function todayISO(){ return new Date().toISOString().slice(0,10); }
   function normalizeDateInput(inputEl){
     const v = inputEl?.value?.trim();
     if(!v) return null;
     const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if(m){ const [_, d, mm, y] = m; return `${y}-${mm}-${d}`; }
-    return v; // típico yyyy-mm-dd
+    return v; // navegadores modernos ya dan yyyy-mm-dd
   }
 
-  // ===== EMPRESA =====
+  // ---- EMPRESA ----
   async function loadEmployer(){
     clearMsg();
     const { data, error } = await supabase
@@ -92,7 +92,7 @@ if (IS_CONFIG_PAGE) {
     showMsg('ok','Empresa guardada/actualizada.');
   }
 
-  // ===== RÉGIMEN =====
+  // ---- RÉGIMEN ----
   async function loadTaxRegimes(){
     const { data, error } = await supabase
       .from('regimes_tax')
@@ -101,7 +101,7 @@ if (IS_CONFIG_PAGE) {
     if(error) throw error;
 
     const taxRegime = document.getElementById('taxRegime');
-    if(taxRegime){
+    if (taxRegime) {
       taxRegime.innerHTML = (data||[])
         .map(r => `<option value="${r.code}">${r.name}</option>`)
         .join('');
@@ -112,7 +112,7 @@ if (IS_CONFIG_PAGE) {
     const { data, error } = await supabase
       .from('employer_tax_history')
       .select('valid_from, valid_to, regimes_tax ( code, name )')
-      .is('valid_to', null) // <- clave: NULL se filtra con .is()
+      .is('valid_to', null)           // <- usar .is para NULL
       .order('valid_from', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -158,7 +158,7 @@ if (IS_CONFIG_PAGE) {
 
     const v = normalizeDateInput(taxValidFrom);
     const args = { regime_code: taxRegime?.value };
-    if (v) args.vfrom = v;
+    if (v) args.vfrom = v;             // si está vacío, que la RPC use current_date
 
     const { error } = await supabase.rpc('set_employer_regime', args);
     if(error) throw error;
@@ -167,7 +167,7 @@ if (IS_CONFIG_PAGE) {
     await loadCurrentTax();
   }
 
-  // ===== List reloads (Sedes / Proyectos / Turnos) =====
+  // ---- Listados (Sedes / Proyectos / Turnos) ----
   async function reloadSites(){
     const { data, error } = await supabase
       .from('sites').select('id, code, name').order('id', { ascending: true });
@@ -187,8 +187,9 @@ if (IS_CONFIG_PAGE) {
     window._shiftsCached = data || [];
   }
 
-  // ===== Modal genérico / acciones =====
+  // ---- Modal genérico ----
   let modalState = { items:[], page:1, perPage:10, kind:"", columns:[] };
+
   function actionButtons(kind, it){
     if(kind === 'tax'){
       return `
@@ -216,6 +217,7 @@ if (IS_CONFIG_PAGE) {
         </svg>
       </button>`;
   }
+
   function openModal(title, items, columns, kind){
     modalState = { items, page:1, perPage:10, kind, columns };
     const titleEl = document.getElementById('modalTitle');
@@ -228,6 +230,7 @@ if (IS_CONFIG_PAGE) {
   }
   function closeModal(){ const wrap=document.getElementById('modalWrap'); if(wrap) wrap.style.display="none"; }
   window.closeModal = closeModal;
+
   function renderModal(){
     const searchEl = document.getElementById('modalSearch');
     const q = (searchEl?.value || "").trim().toLowerCase();
@@ -260,9 +263,11 @@ if (IS_CONFIG_PAGE) {
     if(prev) prev.onclick = () => { if(modalState.page>1){ modalState.page--; renderModal(); } };
     if(next) next.onclick = () => { if(modalState.page<maxPage){ modalState.page++; renderModal(); } };
   }
+
   document.addEventListener('input', (ev)=>{
     if(ev.target && ev.target.id === 'modalSearch') renderModal();
   });
+
   function viewRecord(kind, id){
     const src = modalState.items || [];
     const row = src.find(r => r.id === id);
@@ -301,15 +306,12 @@ if (IS_CONFIG_PAGE) {
   async function modalDelete(kind, id){
     if(kind==='tax'){ return; }
     if(!confirm("¿Eliminar?")) return;
-
     let table = null;
     if(kind==="sites")    table = 'sites';
     if(kind==="projects") table = 'projects';
     if(kind==="shifts")   table = 'shifts';
-
     const { error } = await supabase.from(table).delete().eq('id', id);
     if(error){ alert("No se pudo eliminar: " + error.message); return; }
-
     if(kind==="sites"){ await reloadSites(); await openSitesModal(); }
     if(kind==="projects"){ await reloadProjects(); await openProjectsModal(); }
     if(kind==="shifts"){ await reloadShifts(); await openShiftsModal(); }
@@ -347,11 +349,11 @@ if (IS_CONFIG_PAGE) {
       { header:"Fin", field:"end_time" },
     ], "shifts");
   }
-  window.openSitesModal = openSitesModal;
+  window.openSitesModal    = openSitesModal;
   window.openProjectsModal = openProjectsModal;
-  window.openShiftsModal = openShiftsModal;
+  window.openShiftsModal   = openShiftsModal;
 
-  // ===== Init SOLO en config.html =====
+  // ---- Init SOLO en config.html ----
   window.addEventListener('DOMContentLoaded', async () => {
     // activar link activo
     document.querySelectorAll('.nav a').forEach(a=>{
@@ -362,13 +364,32 @@ if (IS_CONFIG_PAGE) {
       }
     });
 
-    // botones
     const $ = (id)=>document.getElementById(id);
-    $('btnEmpCargar')   && $('btnEmpCargar').addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
-    $('btnEmpGuardar')  && $('btnEmpGuardar').addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
-    $('btnTaxSave')     && $('btnTaxSave').addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
-    $('btnTaxHistory')  && $('btnTaxHistory').addEventListener('click', ()=> window.openTaxHistoryModal());
 
+    // Botones
+    $('btnEmpCargar')  && $('btnEmpCargar').addEventListener('click', ()=> loadEmployer().catch(e=>showMsg('err', e.message)));
+    $('btnEmpGuardar') && $('btnEmpGuardar').addEventListener('click', ()=> saveEmployer().catch(e=>showMsg('err', e.message)));
+
+    // Guardar régimen
+    $('btnTaxSave')    && $('btnTaxSave').addEventListener('click', ()=> saveEmployerTax().catch(e=>showMsg('err', e.message)));
+
+    // Ver historial (sin usar global window.*)
+    const btnHist = $('btnTaxHistory');
+    if (btnHist){
+      btnHist.addEventListener('click', async ()=>{
+        try{
+          const data = await loadTaxHistory();
+          openModal("Histórico de Régimen Tributario", data, [
+            { header:"ID", field:"id" },
+            { header:"Régimen", field:"name" },
+            { header:"Desde", field:"valid_from" },
+            { header:"Hasta", field:"valid_to" },
+          ], "tax");
+        }catch(e){ showMsg('err',`Error cargando historial: ${e.message}`); }
+      });
+    }
+
+    // Crear sede / proyecto / turno
     $('btnSiteAdd') && $('btnSiteAdd').addEventListener('click', async ()=>{
       try{
         clearMsg();
@@ -405,7 +426,7 @@ if (IS_CONFIG_PAGE) {
       }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
     });
 
-    // init de Configuración
+    // Init
     try{
       const taxValidFrom = $('taxValidFrom');
       if(taxValidFrom) taxValidFrom.value = todayISO();
@@ -416,7 +437,8 @@ if (IS_CONFIG_PAGE) {
     await reloadProjects();
     await reloadShifts();
   });
-} // <-- fin bloque IS_CONFIG_PAGE
+} // fin IS_CONFIG_PAGE
+
 
 
 
