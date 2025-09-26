@@ -1,3 +1,10 @@
+// =========================
+// js/config.js (versión segura)
+// =========================
+
+// Detecta si estamos en config.html (usa un elemento exclusivo de esa página)
+const IS_CONFIG_PAGE = !!document.getElementById('btnTaxSave');
+
 // ===== Helpers UI =====
 function showMsg(type, text){
   const box = document.getElementById('msg');
@@ -13,8 +20,11 @@ function clearMsg(){
   box.textContent = '';
   box.className = '';
 }
-// Mostrar errores JS arriba
-window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
+
+// Solo mostraremos errores globales en config.html
+if (IS_CONFIG_PAGE) {
+  window.addEventListener('error', (e)=>{ showMsg('err', `JS Error: ${e.message}`); });
+}
 
 // ===== Helpers Supabase =====
 function sbGuard(res){
@@ -23,27 +33,18 @@ function sbGuard(res){
 }
 function todayISO(){ return new Date().toISOString().slice(0,10); }
 
-// Normaliza el valor de un <input type="date"> a YYYY-MM-DD (o null si vacío/incorrecto)
+// Normaliza el valor de un <input type="date"> a YYYY-MM-DD (o null si vacío)
 function normalizeDateInput(inputEl){
-  let v = (inputEl && typeof inputEl.value === 'string') ? inputEl.value.trim() : '';
-  if(!v) return null;
-
-  // Evitar cadenas literales no válidas
-  if (v.toLowerCase() === 'null' || v.toLowerCase() === 'undefined') return null;
-
+  const v = inputEl?.value?.trim();
+  if(!v) return null; // sin fecha -> deja que la RPC use su default (current_date)
   // dd/mm/yyyy -> yyyy-mm-dd
   const m = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (m) {
-    const [, d, mm, y] = m;
+  if(m){
+    const [_, d, mm, y] = m;
     return `${y}-${mm}-${d}`;
   }
-
-  // yyyy-mm-dd (estándar de <input type="date">)
-  const m2 = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m2) return v;
-
-  // Cualquier otra cosa: inválido
-  return null;
+  // La mayoría de navegadores ya dan yyyy-mm-dd
+  return v;
 }
 
 // ===== Data funcs (Supabase) =====
@@ -108,7 +109,7 @@ async function loadCurrentTax(){
   const { data, error } = await supabase
     .from('employer_tax_history')
     .select('valid_from, valid_to, regimes_tax ( code, name )')
-    .is('valid_to', null)
+    .is('valid_to', null) // <- importante: NULL se filtra con .is()
     .order('valid_from', { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -155,13 +156,11 @@ async function saveEmployerTax(){
 
   const v = normalizeDateInput(taxValidFrom);
 
-  // Construir args: si no hay fecha válida, NO mandamos vfrom (RPC usa current_date)
+  // Armar args: si no hay fecha, NO la mandamos (la RPC usará current_date)
   const args = { regime_code: taxRegime?.value };
   if (v) args.vfrom = v;
 
-  // Útil para depurar si hiciera falta
-  // console.log('RPC set_employer_regime args:', args);
-
+  // RPC con versionado (definida en tu SQL)
   const { error } = await supabase.rpc('set_employer_regime', args);
   if(error) throw error;
 
@@ -335,7 +334,7 @@ window.modalDelete = modalDelete;
 // Abrir modales (carga directa desde BD)
 async function openSitesModal(){
   const { data, error } = await supabase.from('sites').select('id,code,name').order('id',{ascending:true});
-  if(error) { alert(error.message); return; }
+  if (error) { alert(error.message); return; }
   window._sitesCached = data || [];
   openModal("Sedes", window._sitesCached, [
     { header:"ID", field:"id" },
@@ -345,7 +344,7 @@ async function openSitesModal(){
 }
 async function openProjectsModal(){
   const { data, error } = await supabase.from('projects').select('id,code,name').order('id',{ascending:true});
-  if(error) { alert(error.message); return; }
+  if (error) { alert(error.message); return; }
   window._projectsCached = data || [];
   openModal("Proyectos", window._projectsCached, [
     { header:"ID", field:"id" },
@@ -355,7 +354,7 @@ async function openProjectsModal(){
 }
 async function openShiftsModal(){
   const { data, error } = await supabase.from('shifts').select('id,name,start_time,end_time').order('id',{ascending:true});
-  if(error) { alert(error.message); return; }
+  if (error) { alert(error.message); return; }
   window._shiftsCached = data || [];
   openModal("Turnos", window._shiftsCached, [
     { header:"ID", field:"id" },
@@ -383,8 +382,10 @@ window.openTaxHistoryModal = async function openTaxHistoryModal(){
   }
 };
 
-// ===== Init DOM =====
+// ===== Init DOM (solo si es la página de Configuración) =====
 window.addEventListener('DOMContentLoaded', async () => {
+  if (!IS_CONFIG_PAGE) return;
+
   // activar link activo
   document.querySelectorAll('.nav a').forEach(a=>{
     const href=a.getAttribute('href'); if(!href) return;
@@ -437,11 +438,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     }catch(e){ showMsg('err',`Error al crear turno: ${e.message}`); }
   });
 
-  // init
-  try{ await loadEmployer(); }catch{}
+  // init de Configuración
   try{
     const taxValidFrom = $('taxValidFrom');
-    if(taxValidFrom) taxValidFrom.value = todayISO(); // se sobreescribe si hay vigente
+    if(taxValidFrom) taxValidFrom.value = todayISO();
     await loadTaxRegimes();
     await loadCurrentTax();
   }catch(e){ showMsg('err', e.message); }
@@ -450,10 +450,11 @@ window.addEventListener('DOMContentLoaded', async () => {
   await reloadShifts();
 });
 
-// ===== Menú lateral =====
+// ===== Menú lateral (seguro ejecutar en cualquier página) =====
 function closeMenu(){
   document.body.classList.remove('menu-open');
-  document.getElementById('menuBtn').setAttribute('aria-expanded','false');
+  const btn = document.getElementById('menuBtn');
+  btn && btn.setAttribute('aria-expanded','false');
 }
 document.addEventListener('DOMContentLoaded',()=>{
   const btn=document.getElementById('menuBtn');
@@ -465,6 +466,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
 });
+
 
 
 
