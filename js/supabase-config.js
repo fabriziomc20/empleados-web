@@ -9,3 +9,21 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // Crea cliente de Supabase disponible globalmente
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Registro con email y password
+async function signUp(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password });
+  if (error) console.error("Error signup:", error.message);
+  else console.log("Usuario registrado:", data);
+}
+
+// Login
+async function signIn(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) console.error("Error login:", error.message);
+  else console.log("Usuario logueado:", data);
+}
+
+// Cerrar sesión
+async function signOut() {
+  await supabase.auth.signOut();
+}
