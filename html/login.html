@@ -1,88 +1,153 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Login RR.HH. Suite</title>
-  <script type="module" src="../js/supabase-config.js"></script>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Acceso RR.HH.</title>
   <style>
-    body {
-      font-family: sans-serif;
-      background: #f9fafb;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .card {
-      background: #fff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      width: 300px;
-    }
-    input {
-      width: 100%;
-      margin: 8px 0;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #2563eb;
-      border: none;
-      color: #fff;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover { background: #1e4ed8; }
-    .msg { margin-top: 10px; font-size: 0.9em; color: #333; }
+    :root { --primary:#2563eb; --bg:#f6f7fb; --card:#fff; --text:#111827; --muted:#6b7280; --err:#b91c1c; --ok:#065f46; }
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,'Noto Sans',sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
+    .card{width:100%;max-width:420px;background:var(--card);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:22px 20px}
+    h1{font-size:20px;margin:0 0 12px}
+    .muted{color:var(--muted);font-size:12px;margin-bottom:16px}
+    .field{margin:10px 0}
+    label{display:block;font-size:13px;margin:0 0 6px}
+    input{width:100%;padding:12px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:14px}
+    input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    .row{display:flex;gap:10px}
+    button{width:100%;padding:12px;border:0;border-radius:10px;background:var(--primary);color:#fff;font-weight:600;cursor:pointer}
+    button.secondary{background:#e5e7eb;color:#111827}
+    button:disabled{opacity:.6;cursor:not-allowed}
+    .msg{margin:12px 0;padding:10px 12px;border-radius:10px;display:none;font-size:13px}
+    .msg.ok{display:block;background:#ecfdf5;color:var(--ok);border:1px solid #a7f3d0}
+    .msg.err{display:block;background:#fef2f2;color:var(--err);border:1px solid #fecaca}
+    .hr{height:1px;background:#e5e7eb;margin:14px 0}
+    .small{font-size:12px;color:var(--muted)}
+    .session{white-space:pre-wrap;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px;background:#0a0a0a;color:#f3f4f6;border-radius:10px;padding:10px;display:none}
   </style>
 </head>
 <body>
-  <div class="card">
-    <h2>Acceso RR.HH.</h2>
-    <input type="email" id="email" placeholder="Correo" />
-    <input type="password" id="password" placeholder="Contraseña" />
-    <button id="signup">Registrar</button>
-    <button id="login">Iniciar Sesión</button>
-    <button id="logout">Cerrar Sesión</button>
-    <div class="msg" id="msg"></div>
+  <div class="wrap">
+    <div class="card">
+      <h1>Acceso RR.HH.</h1>
+      <div class="muted">Autenticación con Supabase (email / contraseña).</div>
+
+      <div id="msg" class="msg"></div>
+
+      <div class="field">
+        <label for="email">Correo</label>
+        <input id="email" type="email" placeholder="tucorreo@empresa.com" autocomplete="email" required>
+      </div>
+
+      <div class="field">
+        <label for="pass">Contraseña</label>
+        <input id="pass" type="password" placeholder="********" autocomplete="current-password" required>
+      </div>
+
+      <div class="row" style="margin-top:10px">
+        <button id="btnSignup" title="Crear una cuenta">Registrar</button>
+        <button id="btnLogin"  title="Iniciar sesión">Iniciar Sesión</button>
+      </div>
+
+      <div class="row" style="margin-top:8px">
+        <button class="secondary" id="btnLogout" title="Cerrar sesión actual">Cerrar Sesión</button>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="small">Sesión actual</div>
+      <pre id="sessionInfo" class="session"></pre>
+    </div>
   </div>
 
+  <!-- JS en el mismo archivo: importamos supabase-js desde ESM -->
   <script type="module">
-    import { supabase } from '/js/supabase-config.js';
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-    const emailEl = document.getElementById("email");
-    const passEl = document.getElementById("password");
-    const msg = document.getElementById("msg");
+    // 1) Reemplaza por los datos de tu proyecto
+    const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+    const SUPABASE_ANON_KEY = 'TU_PUBLIC_ANON_KEY';
 
-    // Registro
-    document.getElementById("signup").addEventListener("click", async () => {
-      const { data, error } = await supabase.auth.signUp({
-        email: emailEl.value,
-        password: passEl.value,
-      });
-      msg.textContent = error ? "❌ " + error.message : "✅ Usuario registrado, revisa tu correo.";
+    // 2) Cliente
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
     });
 
-    // Login
-    document.getElementById("login").addEventListener("click", async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailEl.value,
-        password: passEl.value,
-      });
-      msg.textContent = error ? "❌ " + error.message : "✅ Sesión iniciada.";
-      console.log(data);
+    // UI helpers
+    const $ = (id) => document.getElementById(id);
+    const msg = $('msg');
+    function showOk(t){ msg.className='msg ok'; msg.textContent=t; msg.style.display='block'; }
+    function showErr(t){ msg.className='msg err'; msg.textContent=t; msg.style.display='block'; }
+    function clearMsg(){ msg.style.display='none'; msg.textContent=''; msg.className='msg'; }
+    function setBusy(b){
+      $('btnSignup').disabled=b; $('btnLogin').disabled=b; $('btnLogout').disabled=b;
+      $('email').disabled=b; $('pass').disabled=b;
+    }
+
+    async function refreshSession(){
+      const { data: { session } } = await supabase.auth.getSession();
+      const box = $('sessionInfo');
+      if (session) {
+        box.style.display = 'block';
+        box.textContent = JSON.stringify({
+          user: {
+            id: session.user.id,
+            email: session.user.email
+          },
+          access_token: '***hidden***',
+          expires_at: session.expires_at
+        }, null, 2);
+      } else {
+        box.style.display = 'none';
+        box.textContent = '';
+      }
+    }
+
+    // Eventos
+    $('btnSignup').addEventListener('click', async () => {
+      clearMsg(); setBusy(true);
+      const email = $('email').value.trim();
+      const password = $('pass').value;
+      try{
+        if(!email || !password) throw new Error('Completa correo y contraseña.');
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        if(error) throw error;
+        showOk('Cuenta creada. Revisa tu correo si exige confirmación.');
+      }catch(e){ showErr(e.message || 'Error al registrar.'); }
+      finally{ setBusy(false); await refreshSession(); }
     });
 
-    // Logout
-    document.getElementById("logout").addEventListener("click", async () => {
-      await supabase.auth.signOut();
-      msg.textContent = "👋 Sesión cerrada.";
+    $('btnLogin').addEventListener('click', async () => {
+      clearMsg(); setBusy(true);
+      const email = $('email').value.trim();
+      const password = $('pass').value;
+      try{
+        if(!email || !password) throw new Error('Completa correo y contraseña.');
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if(error) throw error;
+        showOk('Sesión iniciada.');
+      }catch(e){ showErr(e.message || 'No se pudo iniciar sesión.'); }
+      finally{ setBusy(false); await refreshSession(); }
     });
+
+    $('btnLogout').addEventListener('click', async () => {
+      clearMsg(); setBusy(true);
+      try{
+        const { error } = await supabase.auth.signOut();
+        if(error) throw error;
+        showOk('Sesión cerrada.');
+      }catch(e){ showErr(e.message || 'Error al cerrar sesión.'); }
+      finally{ setBusy(false); await refreshSession(); }
+    });
+
+    // Reacciona a cambios de sesión (login/logout, refresh)
+    supabase.auth.onAuthStateChange((_evt, _session) => {
+      refreshSession();
+    });
+
+    // Estado inicial
+    refreshSession();
   </script>
 </body>
 </html>
