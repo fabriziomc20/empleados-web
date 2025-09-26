@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Login RR.HH. Suite</title>
+  <script type="module" src="supabase-config.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f9fafb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    input {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #2563eb;
+      border: none;
+      color: #fff;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: #1e4ed8; }
+    .msg { margin-top: 10px; font-size: 0.9em; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Acceso RR.HH.</h2>
+    <input type="email" id="email" placeholder="Correo" />
+    <input type="password" id="password" placeholder="Contraseña" />
+    <button id="signup">Registrar</button>
+    <button id="login">Iniciar Sesión</button>
+    <button id="logout">Cerrar Sesión</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabase-config.js';
+
+    const emailEl = document.getElementById("email");
+    const passEl = document.getElementById("password");
+    const msg = document.getElementById("msg");
+
+    // Registro
+    document.getElementById("signup").addEventListener("click", async () => {
+      const { data, error } = await supabase.auth.signUp({
+        email: emailEl.value,
+        password: passEl.value,
+      });
+      msg.textContent = error ? "❌ " + error.message : "✅ Usuario registrado, revisa tu correo.";
+    });
+
+    // Login
+    document.getElementById("login").addEventListener("click", async () => {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: emailEl.value,
+        password: passEl.value,
+      });
+      msg.textContent = error ? "❌ " + error.message : "✅ Sesión iniciada.";
+      console.log(data);
+    });
+
+    // Logout
+    document.getElementById("logout").addEventListener("click", async () => {
+      await supabase.auth.signOut();
+      msg.textContent = "👋 Sesión cerrada.";
+    });
+  </script>
+</body>
+</html>
