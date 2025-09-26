@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<title>Reclutamiento – Formulario</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<link rel="stylesheet" href="../css/styles.css">
-<style>
-  /* Indicador de error para campos */
-  .field [aria-invalid="true"]{ border-color:#ef4444; }
-  .hint--error{ color:#b91c1c; }
-</style>
+  <meta charset="utf-8" />
+  <title>Reclutamiento – Formulario</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="../css/styles.css">
+  <style>
+    /* Indicador de error para campos */
+    .field [aria-invalid="true"]{ border-color:#ef4444; }
+    .hint--error{ color:#b91c1c; }
+  </style>
+  <!-- (Opcional) Favicon para evitar 404 en consola -->
+  <!-- <link rel="icon" href="../favicon.ico"> -->
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -24,7 +26,6 @@
   <nav class="nav" aria-label="Navegación principal">
     <div class="caption">Reclutamiento</div>
     <a href="formularioweb.html" class="active" aria-current="page">Formulario</a>
-    <!-- Eliminado: <a href="consulta.html">Consulta</a> -->
     <div class="caption">Operación</div>
     <a href="empleados.html">Empleados</a>
     <a href="contratos.html">Contratos</a>
@@ -167,6 +168,11 @@
   </div>
 </main>
 
+<!-- Supabase (librería) + tu config (crea el cliente) -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/supabase-config.js"></script>
+
+<!-- Lógica del formulario -->
 <script src="../js/formulario.js" defer></script>
 </body>
 </html>
