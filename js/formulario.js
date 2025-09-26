@@ -191,10 +191,102 @@ form?.addEventListener('submit', async (ev)=>{
   }
 
   try{
-    // TODO: cambia esto cuando movamos "candidatos" a Supabase/Storage
-    showMsg('ok','Formulario preparado. (Pendiente endpoint de candidatos)');
-    dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear(); dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
-    form.reset(); submitBtn.disabled = true; dniEl?.setAttribute('aria-invalid','false'); dniHint?.classList.remove('hint--error');
+    // ====== SUBMIT REAL: candidatos + documentos (Storage) ======
+form.addEventListener('submit', async (ev)=>{
+  ev.preventDefault();
+
+  updateDNIState();
+  if (!form.checkValidity()){
+    showMsg('err', 'Revisa los campos resaltados.');
+    return;
+  }
+
+  const fd = new FormData(form);
+
+  // Normaliza valores
+  function cleanText(v){ return (v || '').trim().replace(/\s+/g, ' ').toUpperCase(); }
+  const dni = (fd.get('dni') || '').replace(/\D+/g,'').slice(0,8);
+  if (dni.length !== 8){ showMsg('err','DNI inválido'); return; }
+
+  const payloadCand = {
+    dni,
+    apellido_paterno : cleanText(fd.get('apellido_paterno')),
+    apellido_materno : cleanText(fd.get('apellido_materno')),
+    nombres         : cleanText(fd.get('nombres')),
+    sede            : cleanText(fd.get('sede') || ''),
+    grupo           : cleanText(fd.get('grupo') || ''),
+    turno_horario   : cleanText(fd.get('turno_horario') || '')
+    // estado y fecha_registro tienen defaults
+  };
+
+  try{
+    // 1) UPSERT candidato por dni
+    let { error: upErr } = await supabase
+      .from('candidatos')
+      .upsert(payloadCand, { onConflict: 'dni' });
+    if (upErr) throw upErr;
+
+    // 2) Obtener id del candidato (para FK)
+    const { data: candRow, error: selErr } = await supabase
+      .from('candidatos')
+      .select('id')
+      .eq('dni', dni)
+      .single();
+    if (selErr) throw selErr;
+    const candidato_id = candRow.id;
+
+    // 3) Subir archivos a Storage (bucket 'docs') y recolectar URLs públicas
+    async function uploadList(inputId, tipo){
+      const input = document.getElementById(inputId);
+      if (!input || !input._dt) return [];
+
+      const files = Array.from(input._dt.files);
+      const urls = [];
+
+      for (const file of files){
+        const path = `candidatos/${dni}/${tipo}/${Date.now()}_${file.name}`;
+        const { data, error } = await supabase.storage.from('docs').upload(path, file);
+        if (error) throw error;
+
+        // Obtener URL pública
+        const { data: pub } = supabase.storage.from('docs').getPublicUrl(path);
+        urls.push(pub.publicUrl);
+      }
+      return urls.map(url => ({ tipo, url }));
+    }
+
+    const docs = [
+      ...(await uploadList('dniInput',            'dni')),
+      ...(await uploadList('certificadosInput',   'certificados')),
+      ...(await uploadList('antecedentesInput',   'antecedentes')),
+      ...(await uploadList('medicosInput',        'medicos')),
+      ...(await uploadList('capacitacionInput',   'capacitacion')),
+      ...(await uploadList('cvInput',             'cv')),
+    ];
+
+    // 4) Insertar en candidato_documentos
+    if (docs.length){
+      const rows = docs.map(d => ({ candidato_id, tipo: d.tipo, url: d.url }));
+      const { error: docsErr } = await supabase
+        .from('candidato_documentos')
+        .insert(rows);
+      if (docsErr) throw docsErr;
+    }
+
+    showMsg('ok','Candidato registrado');
+    // Limpiar UI
+    dzDni.clear(); dzCertificados.clear(); dzAntecedentes.clear();
+    dzMedicos.clear(); dzCapacitacion.clear(); dzCV.clear();
+    form.reset();
+    submitBtn.disabled = true;
+    dniEl.setAttribute('aria-invalid','false');
+    dniHint.classList.remove('hint--error');
+  }catch(e){
+    console.error(e);
+    showMsg('err', `Error al guardar: ${e.message}`);
+  }
+});
+
   }catch(e){
     console.error(e);
     showMsg('err',`Error al enviar: ${e.message}`);
