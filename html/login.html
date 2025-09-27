@@ -1,75 +1,70 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
   <title>Acceso RR.HH.</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://unpkg.com/@supabase/supabase-js"></script>
   <style>
-    body{margin:0;font-family:system-ui,sans-serif;background:#f6f7fb;display:flex;align-items:center;justify-content:center;min-height:100vh}
-    .card{background:#fff;padding:24px;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.08);width:100%;max-width:360px}
-    h1{margin:0 0 16px;font-size:20px;color:#111}
-    .field{margin-bottom:14px}
-    label{display:block;font-size:13px;margin-bottom:4px}
-    input{width:100%;padding:10px;border:1px solid #ddd;border-radius:8px}
-    button{width:100%;padding:12px;margin-top:8px;border:0;border-radius:8px;font-weight:600;cursor:pointer}
-    .primary{background:#2563eb;color:#fff}
-    .secondary{background:#eee}
-    .msg{margin-top:12px;padding:8px;border-radius:8px;font-size:13px;display:none}
-    .ok{background:#ecfdf5;color:#065f46}
-    .err{background:#fef2f2;color:#b91c1c}
+    body { display:flex; height:100vh; align-items:center; justify-content:center; background:#f3f4f6; font-family:sans-serif; }
+    .box { background:white; padding:20px; border-radius:10px; width:300px; box-shadow:0 2px 8px rgba(0,0,0,0.1); text-align:center; }
+    input { width:100%; padding:10px; margin:8px 0; border:1px solid #ccc; border-radius:6px; }
+    button { width:100%; padding:10px; margin:6px 0; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1e4fd7; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <h1>Acceso RR.HH.</h1>
-
-    <div class="field">
-      <label for="email">Correo</label>
-      <input id="email" type="email" placeholder="tucorreo@empresa.com">
-    </div>
-    <div class="field">
-      <label for="pass">Contraseña</label>
-      <input id="pass" type="password" placeholder="********">
-    </div>
-
-    <button class="primary" id="btnSignup">Registrar</button>
-    <button class="primary" id="btnLogin">Iniciar Sesión</button>
-    <button class="secondary" id="btnLogout">Cerrar Sesión</button>
-
-    <div id="msg" class="msg"></div>
+  <div class="box">
+    <h2>Acceso RR.HH.</h2>
+    <input type="email" id="email" placeholder="Correo">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button onclick="registrar()">Registrar</button>
+    <button onclick="login()">Iniciar Sesión</button>
+    <button onclick="logout()">Cerrar Sesión</button>
+    <p id="mensaje" style="color:red;"></p>
   </div>
 
-  <!-- 1) Supabase SDK -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <!-- 2) Tu config global -->
-  <script src="../js/supabase-config.js"></script>
-  <!-- 3) Lógica del login -->
   <script>
-    const $ = (id)=>document.getElementById(id);
-    const msg = $('msg');
-    function show(m,t){msg.textContent=m;msg.className='msg '+t;msg.style.display='block'}
+    // Configuración de Supabase
+    const SUPABASE_URL = "https://nwpwvgzhhocdojoburvw.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53cHd2Z3poaG9jZG9qb2J1cnZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NzEwNTUsImV4cCI6MjA3MzU0NzA1NX0.FK1zKJhT0JIL3oVBcmph08OorcQOCkZt70n6DtuC8Sk";
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    $('btnSignup').onclick = async ()=>{
-      const {error} = await supabase.auth.signUp({ 
-        email:$('email').value, 
-        password:$('pass').value 
-      });
-      if(error) show(error.message,'err'); else show('Registro exitoso. Revisa tu correo.','ok');
-    };
+    const mensaje = document.getElementById("mensaje");
 
-    $('btnLogin').onclick = async ()=>{
-      const {error} = await supabase.auth.signInWithPassword({ 
-        email:$('email').value, 
-        password:$('pass').value 
-      });
-      if(error) show(error.message,'err'); else show('Sesión iniciada','ok');
-    };
+    // Si ya hay sesión activa, redirigir al formulario
+    async function checkSession() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = "formulario.html"; 
+      }
+    }
+    checkSession();
 
-    $('btnLogout').onclick = async ()=>{
-      const {error} = await supabase.auth.signOut();
-      if(error) show(error.message,'err'); else show('Sesión cerrada','ok');
-    };
+    // Registrar usuario
+    async function registrar() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) mensaje.textContent = error.message;
+      else mensaje.textContent = "Revisa tu correo para confirmar el registro.";
+    }
+
+    // Iniciar sesión
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) mensaje.textContent = error.message;
+      else window.location.href = "formulario.html"; 
+    }
+
+    // Cerrar sesión
+    async function logout() {
+      await supabase.auth.signOut();
+      mensaje.textContent = "Sesión cerrada.";
+    }
   </script>
 </body>
 </html>
+
 
