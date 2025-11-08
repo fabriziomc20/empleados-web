@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Crear contraseña | RR.HH. Suite</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="./css/styles.css">
+
+  <!-- Supabase -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="./js/supabase-config.js"></script>
+
+  <style>
+    body {
+      background: var(--bg, #f9fafb);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+    .card {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,.08);
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: .5rem;
+    }
+    p {
+      color: var(--muted,#6b7280);
+      margin-bottom: 1.5rem;
+    }
+    label {
+      display: block;
+      text-align: left;
+      margin-top: 1rem;
+      font-weight: 500;
+    }
+    input[type=password] {
+      width: 100%;
+      padding: .6rem .8rem;
+      border: 1px solid #d1d5db;
+      border-radius: .5rem;
+      font-size: 1rem;
+      margin-top: .3rem;
+    }
+    button {
+      margin-top: 1.5rem;
+      background: var(--brand,#2563eb);
+      color: #fff;
+      border: none;
+      padding: .7rem 1.5rem;
+      border-radius: .6rem;
+      cursor: pointer;
+      font-size: 1rem;
+      width: 100%;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    .msg {
+      margin-top: 1rem;
+      font-size: .9rem;
+    }
+    .ok { color: #047857; }
+    .err { color: #dc2626; }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <h1>¡Bienvenido(a)!</h1>
+    <p>Para finalizar tu registro, crea una contraseña para tu cuenta.</p>
+
+    <form id="pwdForm">
+      <label for="pwd1">Nueva contraseña</label>
+      <input id="pwd1" type="password" minlength="8" required placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+
+      <label for="pwd2">Repetir contraseña</label>
+      <input id="pwd2" type="password" minlength="8" required placeholder="Repite la contraseña" autocomplete="new-password">
+
+      <button type="submit">Guardar contraseña</button>
+      <div id="pwdMsg" class="msg" aria-live="polite"></div>
+    </form>
+  </div>
+
+  <script>
+  (async () => {
+    // Esperar a que Supabase cargue y ver si la sesión proviene del enlace de invitación
+    const { data: { session } } = await supabase.auth.getSession();
+    const form = document.getElementById('pwdForm');
+    const msg = document.getElementById('pwdMsg');
+
+    if (!session) {
+      msg.className = 'msg err';
+      msg.textContent = 'El enlace de invitación no es válido o ha expirado.';
+      form.style.display = 'none';
+      return;
+    }
+
+    // Manejar envío del formulario
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msg.textContent = '';
+      const pwd1 = document.getElementById('pwd1').value.trim();
+      const pwd2 = document.getElementById('pwd2').value.trim();
+
+      if (pwd1.length < 8) {
+        msg.className = 'msg err';
+        msg.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        return;
+      }
+      if (pwd1 !== pwd2) {
+        msg.className = 'msg err';
+        msg.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      // Actualiza contraseña usando sesión del magic link
+      const { error } = await supabase.auth.updateUser({ password: pwd1 });
+      if (error) {
+        msg.className = 'msg err';
+        msg.textContent = 'Error al guardar la contraseña: ' + error.message;
+        return;
+      }
+
+      msg.className = 'msg ok';
+      msg.textContent = '¡Contraseña creada correctamente! Redirigiendo...';
+
+      // Esperar un momento y redirigir al panel
+      setTimeout(() => {
+        location.href = '/app/config.html'; // ajusta a tu ruta principal
+      }, 1200);
+    });
+  })();
+  </script>
+</body>
+</html>
