@@ -117,7 +117,8 @@
         </div>
       </div>
 
-      <!-- USUARIOS Y PERMISOS (ACCESO A LA APP) -->
+      
+<!-- USUARIOS Y PERMISOS (ACCESO A LA APP, SOLO INVITACIÓN) -->
 <div class="card">
   <h2>Usuarios con acceso</h2>
 
@@ -142,47 +143,6 @@
         </select>
       </div>
     </div>
-    <!-- MODO DE CREACIÓN DE ACCESO -->
-<fieldset class="mt-2">
-  <legend>Acceso del usuario</legend>
-
-  <div class="row">
-    <label class="chk">
-      <input type="radio" name="accessMode" id="modeInvite" value="invite" checked>
-      Enviar invitación por correo (recomendado)
-    </label>
-  </div>
-
-  <div class="row">
-    <label class="chk">
-      <input type="radio" name="accessMode" id="modePassword" value="password">
-      Crear cuenta con contraseña (temporal)
-    </label>
-  </div>
-
-  <!-- Campos de contraseña (solo visibles si se elige 'password') -->
-  <div id="passwordBox" class="mt-1" style="display:none">
-    <div class="row3">
-      <div>
-        <label for="userPass">Contraseña temporal</label>
-        <input id="userPass" type="password" placeholder="Mín. 8 caracteres" autocomplete="new-password">
-      </div>
-      <div>
-        <label for="userPass2">Repetir contraseña</label>
-        <input id="userPass2" type="password" placeholder="Repite la contraseña" autocomplete="new-password">
-      </div>
-      <div>
-        <label class="chk" style="margin-top:28px">
-          <input type="checkbox" id="forceReset" checked>
-          Forzar cambio al primer inicio
-        </label>
-      </div>
-    </div>
-    <div class="small mt-1">
-      La contraseña es <strong>temporal</strong>. Por seguridad, se pedirá cambiarla al primer inicio.
-    </div>
-  </div>
-</fieldset>
 
     <!-- Permisos por módulo (opcional) -->
     <details id="permOpt" class="mt-2">
@@ -209,7 +169,6 @@
       </div>
     </details>
 
-
     <div class="actions">
       <button id="btnInviteUser">Enviar invitación</button>
       <button class="secondary" id="btnInviteReset">Limpiar</button>
@@ -229,24 +188,7 @@
   </div>
 
   <div id="usersList" class="mt-1" role="table" aria-label="Usuarios con acceso">
-    <!-- Se llena por JS: filas con nombre, correo, rol, estado y acciones -->
-    <!-- Estructura de fila (ejemplo):
-      <div class="list-row" role="row">
-        <div class="cell name" role="cell">Ana Gómez</div>
-        <div class="cell email" role="cell">ana@empresa.com</div>
-        <div class="cell role" role="cell">
-          <select data-user-id="..." class="user-role">
-            <option>admin</option>...
-          </select>
-        </div>
-        <div class="cell status" role="cell"><span class="badge badge--pending">Pendiente</span></div>
-        <div class="cell actions" role="cell">
-          <button class="small" data-act="resend" data-user-id="...">Reenviar</button>
-          <button class="small" data-act="toggle" data-user-id="...">Desactivar</button>
-          <button class="small danger" data-act="remove" data-user-id="...">Quitar</button>
-        </div>
-      </div>
-    -->
+    <!-- Se rellena por JS -->
   </div>
 
   <div class="pager">
@@ -260,8 +202,6 @@
   </div>
 </div>
 
-
-    </div>
   </main>
 
   <!-- MODAL reutilizable -->
