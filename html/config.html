@@ -146,18 +146,18 @@
     <!-- Permisos por módulo (opcional) -->
     <details id="permOpt" class="mt-2">
       <summary>Permisos avanzados (opcional)</summary>
-      <div class="row3 mt-1">
-        <div>
+      <div class="perm-grid mt-1">
+        <div class="perm-col">
           <div class="caption">Empleados</div>
           <label class="chk"><input type="checkbox" id="permEmpRead" checked> Leer</label>
           <label class="chk"><input type="checkbox" id="permEmpWrite"> Escribir</label>
         </div>
-        <div>
+        <div class="perm-col">
           <div class="caption">Contratos</div>
           <label class="chk"><input type="checkbox" id="permCtrRead" checked> Leer</label>
           <label class="chk"><input type="checkbox" id="permCtrWrite"> Escribir</label>
         </div>
-        <div>
+        <div class="perm-col">
           <div class="caption">Nómina</div>
           <label class="chk"><input type="checkbox" id="permNomRead" checked> Leer</label>
           <label class="chk"><input type="checkbox" id="permNomWrite"> Escribir</label>
@@ -167,6 +167,7 @@
         Si no tocas esto, aplicaremos los permisos por defecto del rol elegido.
       </div>
     </details>
+
 
     <div class="actions">
       <button id="btnInviteUser">Enviar invitación</button>
