@@ -117,6 +117,108 @@
         </div>
       </div>
 
+      <!-- USUARIOS Y PERMISOS (ACCESO A LA APP) -->
+<div class="card">
+  <h2>Usuarios con acceso</h2>
+
+  <!-- INVITAR NUEVO USUARIO -->
+  <fieldset>
+    <legend>Invitar asistente / manager</legend>
+    <div class="row3">
+      <div>
+        <label for="userName">Nombre completo</label>
+        <input id="userName" placeholder="Ana Gómez" autocomplete="name">
+      </div>
+      <div>
+        <label for="userEmail">Correo</label>
+        <input id="userEmail" type="email" placeholder="ana@empresa.com" autocomplete="email">
+      </div>
+      <div>
+        <label for="userRole">Rol</label>
+        <select id="userRole" aria-label="Rol de acceso">
+          <option value="manager">Manager</option>
+          <option value="employee">Empleado (con acceso)</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Permisos por módulo (opcional) -->
+    <details id="permOpt" class="mt-2">
+      <summary>Permisos avanzados (opcional)</summary>
+      <div class="row3 mt-1">
+        <div>
+          <div class="caption">Empleados</div>
+          <label class="chk"><input type="checkbox" id="permEmpRead" checked> Leer</label>
+          <label class="chk"><input type="checkbox" id="permEmpWrite"> Escribir</label>
+        </div>
+        <div>
+          <div class="caption">Contratos</div>
+          <label class="chk"><input type="checkbox" id="permCtrRead" checked> Leer</label>
+          <label class="chk"><input type="checkbox" id="permCtrWrite"> Escribir</label>
+        </div>
+        <div>
+          <div class="caption">Nómina</div>
+          <label class="chk"><input type="checkbox" id="permNomRead" checked> Leer</label>
+          <label class="chk"><input type="checkbox" id="permNomWrite"> Escribir</label>
+        </div>
+      </div>
+      <div class="small mt-1">
+        Si no tocas esto, aplicaremos los permisos por defecto del rol elegido.
+      </div>
+    </details>
+
+    <div class="actions">
+      <button id="btnInviteUser">Enviar invitación</button>
+      <button class="secondary" id="btnInviteReset">Limpiar</button>
+    </div>
+    <div id="inviteMsg" class="small" role="status" aria-live="polite"></div>
+  </fieldset>
+
+  <!-- LISTADO DE USUARIOS CON ACCESO -->
+  <h3 class="mt-2">Equipo con acceso</h3>
+  <div class="row">
+    <div class="grow">
+      <input id="userFilter" type="search" placeholder="Buscar por nombre o correo…">
+    </div>
+    <div>
+      <button class="secondary" id="btnUsersReload" title="Recargar">↻</button>
+    </div>
+  </div>
+
+  <div id="usersList" class="mt-1" role="table" aria-label="Usuarios con acceso">
+    <!-- Se llena por JS: filas con nombre, correo, rol, estado y acciones -->
+    <!-- Estructura de fila (ejemplo):
+      <div class="list-row" role="row">
+        <div class="cell name" role="cell">Ana Gómez</div>
+        <div class="cell email" role="cell">ana@empresa.com</div>
+        <div class="cell role" role="cell">
+          <select data-user-id="..." class="user-role">
+            <option>admin</option>...
+          </select>
+        </div>
+        <div class="cell status" role="cell"><span class="badge badge--pending">Pendiente</span></div>
+        <div class="cell actions" role="cell">
+          <button class="small" data-act="resend" data-user-id="...">Reenviar</button>
+          <button class="small" data-act="toggle" data-user-id="...">Desactivar</button>
+          <button class="small danger" data-act="remove" data-user-id="...">Quitar</button>
+        </div>
+      </div>
+    -->
+  </div>
+
+  <div class="pager">
+    <button class="secondary" id="usersPrev">« Prev</button>
+    <span id="usersPageInfo" class="small"></span>
+    <button class="secondary" id="usersNext">Next »</button>
+  </div>
+
+  <div class="small">
+    Nota: solo los <strong>admins</strong> pueden invitar, cambiar roles y quitar accesos.
+  </div>
+</div>
+
+
     </div>
   </main>
 
