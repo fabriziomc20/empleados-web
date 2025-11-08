@@ -536,6 +536,29 @@ select:focus-visible,
 @media (min-width: 1024px){ #grid.grid{ grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1280px){ #grid.grid{ grid-template-columns: repeat(4, 1fr); } }
 */
+/* ---- Permisos avanzados: alineación limpia ---- */
+.perm-grid { 
+  display: grid; 
+  grid-template-columns: repeat(3, minmax(0,1fr)); 
+  gap: 12px; 
+}
+
+.perm-col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.chk { 
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px; 
+  line-height: 1.2;
+}
+
+.mt-1 { margin-top: .5rem; }
+.mt-2 { margin-top: 1rem; }
 
 
 
