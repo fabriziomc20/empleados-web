@@ -35,7 +35,7 @@
     async function checkSession() {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        window.location.href = "formulario.html"; 
+        window.location.href = "config.html"; 
       }
     }
     checkSession();
@@ -55,7 +55,7 @@
       const password = document.getElementById("password").value;
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) mensaje.textContent = error.message;
-      else window.location.href = "formulario.html"; 
+      else window.location.href = "config.html"; 
     }
 
     // Cerrar sesión
