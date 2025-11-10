@@ -20,6 +20,24 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+  // Botón cerrar sesión (solo en config.html)
+document.getElementById('btnSidebarLogout')?.addEventListener('click', async () => {
+  try {
+    await supabase.auth.signOut();
+  } finally {
+    // sincroniza logout entre pestañas
+    localStorage.setItem('force-logout', String(Date.now()));
+    location.href = 'login.html';
+  }
+});
+
+// Si otra pestaña cerró sesión, esta también vuelve a login
+window.addEventListener('storage', (e)=>{
+  if (e.key === 'force-logout' && e.newValue) {
+    location.href = 'login.html';
+  }
+});
+
 });
 
 // =========================
