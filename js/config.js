@@ -20,24 +20,24 @@ document.addEventListener('DOMContentLoaded', ()=>{
   });
   backdrop?.addEventListener('click',closeMenu);
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeMenu(); });
+
   // Botón cerrar sesión (solo en config.html)
-document.getElementById('btnSidebarLogout')?.addEventListener('click', async () => {
-  try {
-    await supabase.auth.signOut();
-  } finally {
-    // sincroniza logout entre pestañas
-    localStorage.setItem('force-logout', String(Date.now()));
-    location.href = 'login.html';
-  }
-});
+  document.getElementById('btnSidebarLogout')?.addEventListener('click', async () => {
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      // sincroniza logout entre pestañas
+      localStorage.setItem('force-logout', String(Date.now()));
+      location.href = 'login.html';
+    }
+  });
 
-// Si otra pestaña cerró sesión, esta también vuelve a login
-window.addEventListener('storage', (e)=>{
-  if (e.key === 'force-logout' && e.newValue) {
-    location.href = 'login.html';
-  }
-});
-
+  // Si otra pestaña cerró sesión, esta también vuelve a login
+  window.addEventListener('storage', (e)=>{
+    if (e.key === 'force-logout' && e.newValue) {
+      location.href = 'login.html';
+    }
+  });
 });
 
 // =========================
@@ -528,15 +528,15 @@ if (IS_CONFIG_PAGE) {
         role,
         status,
         is_enabled,
-        profile:user_id ( full_name, email )
+        profiles:user_id ( full_name, email )
       `)
-      .eq('company_id', company_id)
-      .order('role', { ascending: true });
+    .eq('company_id', company_id)
+    .order('role', { ascending: true });
     if(error){ showMsg('err', 'Error cargando usuarios: ' + error.message); return; }
     usersState.items = (data || []).map(row => ({
       user_id: row.user_id,
-      full_name: row.profile?.full_name || '(sin nombre)',
-      email: row.profile?.email || '(sin correo)',
+      full_name: row.profiles?.full_name || '(sin nombre)',
+      email: row.profiles?.email || '(sin correo)',
       role: row.role,
       status: row.status || 'accepted',
       is_enabled: row.is_enabled !== false
@@ -775,10 +775,14 @@ if (IS_CONFIG_PAGE) {
     try{
       const taxValidFrom = $('taxValidFrom');
       if(taxValidFrom) taxValidFrom.value = todayISO();
-      await loadEmployer();           // ← fija _currentCompanyId si hay empresa
+
+      // Cargar empresa por membresía (fija _currentCompanyId)
+      await loadEmployer();
+
       await loadTaxRegimes();
       await loadCurrentTax();
     }catch(e){ showMsg('err', e.message); }
+
     await reloadSites();
     await reloadProjects();
     await reloadShifts();
@@ -789,7 +793,6 @@ if (IS_CONFIG_PAGE) {
     }
   });
 } // fin IS_CONFIG_PAGE
-
 
 
 
