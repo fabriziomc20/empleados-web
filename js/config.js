@@ -520,28 +520,53 @@ if (IS_CONFIG_PAGE) {
   }
 
   async function reloadUsers(){
-    const company_id = getCompanyIdOrWarn();
-    const { data, error } = await supabase
-      .from('company_memberships')
-      .select(`
-        user_id,
-        role,
-        status,
-        is_enabled,
-        profiles:user_id ( full_name, email )
-      `)
+  const company_id = getCompanyIdOrWarn();
+
+  // 1) membership rows
+  const { data: mems, error: e1 } = await supabase
+    .from('company_memberships')
+    .select('user_id, role, status, is_enabled')
     .eq('company_id', company_id)
     .order('role', { ascending: true });
-    if(error){ showMsg('err', 'Error cargando usuarios: ' + error.message); return; }
-    usersState.items = (data || []).map(row => ({
-      user_id: row.user_id,
-      full_name: row.profiles?.full_name || '(sin nombre)',
-      email: row.profiles?.email || '(sin correo)',
-      role: row.role,
-      status: row.status || 'accepted',
-      is_enabled: row.is_enabled !== false
-    }));
+
+  if (e1) {
+    showMsg('err', 'Error cargando usuarios: ' + e1.message);
+    usersState.items = [];
+    return;
   }
+
+  if (!mems || !mems.length){
+    usersState.items = [];
+    return;
+  }
+
+  // 2) fetch profiles for those user_ids
+  const ids = Array.from(new Set(mems.map(m => m.user_id))).filter(Boolean);
+  let profById = {};
+  if (ids.length){
+    const { data: profs, error: e2 } = await supabase
+      .from('profiles')
+      .select('user_id, full_name, email')
+      .in('user_id', ids);
+
+    if (!e2 && profs) {
+      profById = Object.fromEntries(
+        profs.map(p => [p.user_id, { full_name: p.full_name, email: p.email }])
+      );
+    }
+  }
+
+  // 3) merge
+  usersState.items = mems.map(row => ({
+    user_id: row.user_id,
+    full_name: profById[row.user_id]?.full_name ?? '(sin nombre)',
+    email:     profById[row.user_id]?.email     ?? '(sin correo)',
+    role: row.role,
+    status: row.status || 'accepted',
+    is_enabled: row.is_enabled !== false
+  }));
+}
+
 
   function renderUsers(){
     const list = document.getElementById('usersList');
